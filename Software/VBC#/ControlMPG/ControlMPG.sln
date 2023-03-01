@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31729.503
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControlMPG", "ControlMPG.csproj", "{B501D0BA-4294-4D0B-B61A-CDFC976B00ED}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B501D0BA-4294-4D0B-B61A-CDFC976B00ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B501D0BA-4294-4D0B-B61A-CDFC976B00ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B501D0BA-4294-4D0B-B61A-CDFC976B00ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B501D0BA-4294-4D0B-B61A-CDFC976B00ED}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A6150CD3-3038-42B4-BE7A-F07D44D4E13F}
+	EndGlobalSection
+EndGlobal
