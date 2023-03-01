@@ -1428,7 +1428,7 @@ rule CXX_STATIC_LIBRARY_LINKER____idf_main
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = C:\Users\fabia\.espressif\tools\cmake\3.16.4\bin\cmake.exe -SC:\Users\fabia\OneDrive\Desktop\Wireless_handwheel_MPG_mach3\Firmware -BC:\Users\fabia\OneDrive\Desktop\Wireless_handwheel_MPG_mach3\Firmware\build
+  command = C:\Users\fabia\.espressif\tools\cmake\3.16.4\bin\cmake.exe -SC:\Users\fabia\OneDrive\Desktop\Tesis\Firmware\Wireless_handwheel_MPG_mach3\Firmware -BC:\Users\fabia\OneDrive\Desktop\Tesis\Firmware\Wireless_handwheel_MPG_mach3\Firmware\build
   description = Re-running CMake...
   generator = 1
 

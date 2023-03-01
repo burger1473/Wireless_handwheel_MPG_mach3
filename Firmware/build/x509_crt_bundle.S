@@ -1,4 +1,4 @@
-/* * Data converted from C:/Users/fabia/OneDrive/Desktop/Wireless_handwheel_MPG_mach3/Firmware/build/esp-idf/mbedtls/x509_crt_bundle
+/* * Data converted from C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/esp-idf/mbedtls/x509_crt_bundle
  */
 .data
 .section .rodata.embedded

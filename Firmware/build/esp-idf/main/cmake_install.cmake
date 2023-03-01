@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/fabia/OneDrive/Desktop/Wireless_handwheel_MPG_mach3/Firmware/main
+# Install script for directory: C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/main
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

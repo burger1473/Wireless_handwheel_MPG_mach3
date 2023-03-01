@@ -1,8 +1,8 @@
 {
     "project_name":       "bootloader",
     "project_path":       "C:/esp/esp-idf/components/bootloader/subproject",
-    "build_dir":          "C:/Users/fabia/OneDrive/Desktop/Wireless_handwheel_MPG_mach3/Firmware/build/bootloader",
-    "config_file":        "C:/Users/fabia/OneDrive/Desktop/Wireless_handwheel_MPG_mach3/Firmware/sdkconfig",
+    "build_dir":          "C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/bootloader",
+    "config_file":        "C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/sdkconfig",
     "config_defaults":    "",
     "app_elf":            "bootloader.elf",
     "app_bin":            "bootloader.bin",
