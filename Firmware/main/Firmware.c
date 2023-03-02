@@ -1,59 +1,146 @@
-/*=============================================================================
- * Author: Fabian Burgos
- * Date: 07/04/2021 
- * Board: ESP32-CAM
- *===========================================================================*/
+#include <lwip/sockets.h>
+#include <esp_log.h>
+#include <string.h>
+#include <errno.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
+#include <esp_event.h>
+#include <esp_event_loop.h>
+#include <esp_system.h>
+#include <esp_wifi.h>
+#include <nvs_flash.h>
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
+#include <string.h>
+#include "driver/ledc.h"
 #include "sdkconfig.h"
-#include "soc/soc.h" //disable brownout detector
-#include "soc/rtc_cntl_reg.h" //disable brownout detector (deteccion de apagon)
-#include "soc/rtc_wdt.h"
 
+#define PORT_NUMBER 8001
 
-#define LED1 4
-#define Cantidad_Salidas		6
-#define Cantidad_Entradas		2
+static char tag[] = "socket_server";
 
-int8_t Salida [Cantidad_Salidas] = {4, 2, 14, 15, 13, 12}; //especifico pines de salida
-int8_t Entrada [Cantidad_Entradas] = {0, 16}; //especifico pines de entrada
+static void sendData(int sock) {
+	int len;
+    char rx_bufferr[128];
+
+    do {
+        len = recv(sock, rx_bufferr, sizeof(rx_bufferr) - 1, 0);
+        if (len < 0) {
+            ESP_LOGE(tag, "Error occurred during receiving: errno %d", errno);
+        } else if (len == 0) {
+            ESP_LOGW(tag, "Connection closed");
+        } else {
+            rx_bufferr[len] = 0; // Null-terminate whatever is received and treat it like a string
+            ESP_LOGI(tag, "Received %d bytes: %s", len, rx_bufferr);
+
+            // send() can return less bytes than supplied length.
+            // Walk-around for robust implementation.
+            int to_write = len;
+            while (to_write > 0) {
+                int written = send(sock, rx_bufferr + (len - to_write), to_write, 0);
+                if (written < 0) {
+                    ESP_LOGE(tag, "Error occurred during sending: errno %d", errno);
+                    // Failed to retransmit, giving up
+                    return;
+                }
+                to_write -= written;
+            }
+        }
+    } while (len > 0);
+}
+
+esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
+    return ESP_OK;
+}
+
+/**
+
+Creates a new Wifi-AP on ESP32
+
+*/
+void wifi_start_access_point() {
+    wifi_config_t wifi_config = {
+        .ap = {
+            .ssid="CONECTAR6619",
+            .ssid_len=0,
+            .password="309997699",
+            .channel=6,
+            .authmode=WIFI_AUTH_WPA2_PSK,
+            .ssid_hidden=0,
+            .max_connection=4,
+            .beacon_interval=100
+        }
+    };
+
+    tcpip_adapter_init();
+    esp_event_loop_init(wifi_event_handler, NULL);
+    wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&wifi_init_config);
+    esp_wifi_set_storage(WIFI_STORAGE_RAM);
+    esp_wifi_set_mode(WIFI_MODE_AP);
+    esp_wifi_set_config(WIFI_IF_AP, &wifi_config);
+    esp_wifi_start();
+}
+
+/**
+ * Create a listening socket.  We then wait for a client to connect.
+ * Once a client has connected, we then read until there is no more data
+ * and log the data read.  We then close the client socket and start
+ * waiting for a new connection.
+ */
+void socket_server_task(void *ignore) {
+	struct sockaddr_in clientAddress;
+	struct sockaddr_in serverAddress;
+
+	// Create a socket that we will listen upon.
+	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (sock < 0) {
+		ESP_LOGE(tag, "socket: %d %s", sock, strerror(errno));
+		goto END;
+	}
+
+	// Bind our server socket to a port.
+	serverAddress.sin_family = AF_INET;
+	serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+	serverAddress.sin_port = htons(PORT_NUMBER);
+	int rc  = bind(sock, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+	if (rc < 0) {
+		ESP_LOGE(tag, "bind: %d %s", rc, strerror(errno));
+		goto END;
+	}
+
+	// Flag the socket as listening for new connections.
+	rc = listen(sock, 5);
+	if (rc < 0) {
+		ESP_LOGE(tag, "listen: %d %s", rc, strerror(errno));
+		goto END;
+	}
+
+	while (1) {
+		// Listen for a new client connection.
+		ESP_LOGD(tag, "Waiting for new client connection");
+		socklen_t clientAddressLength = sizeof(clientAddress);
+		int clientSock = accept(sock, (struct sockaddr *)&clientAddress, &clientAddressLength);
+		if (clientSock < 0) {
+			ESP_LOGE(tag, "accept: %d %s", clientSock, strerror(errno));
+			goto END;
+		}
+		sendData(clientSock);
+	}
+	END:
+	vTaskDelete(NULL);
+}
+
+//--------
+//  Main
+//--------
 
 void app_main() {
-	//Configuración
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
-    rtc_wdt_protect_off();
-    rtc_wdt_disable();
-	
-	//Configuro salidas y las pongo en estado bajo
-    for(int8_t i = 0; i < Cantidad_Salidas; i++){
-		gpio_pad_select_gpio(Salida[i]);
-		gpio_set_direction(Salida[i], GPIO_MODE_OUTPUT);
-        gpio_set_level(Salida[i], 0);
-	}
-	
-	//Configuro entradas y las pongo pulldown
-    for(int8_t j = 0; j < Cantidad_Entradas; j++){
-		gpio_pad_select_gpio(Entrada[j]);
-		gpio_set_direction(Entrada[j], GPIO_MODE_INPUT);
-		gpio_set_pull_mode(Entrada[j], GPIO_PULLDOWN_ONLY);
-	}
-	
-	//if (gpio_get_level(PULSADOR1) == 1){}
-	
-   //Bucle infinito 
-    while(1) {
-		printf("Escribo en serial\n");
-		
-        gpio_set_level(Salida[0], 1);//prendo solo led1
-		
-        vTaskDelay(1000 / portTICK_PERIOD_MS); //Espero 1000 milisegundo
-		
-        gpio_set_level(Salida[0], 0); //prendo solo led1
-        vTaskDelay(1000 / portTICK_PERIOD_MS); //Espero 1000 milisegundo
-		
-    }
+    nvs_flash_init();
 
+    
+    wifi_start_access_point();
+    xTaskCreate(socket_server_task, "tcp_server", 4096, (void*)AF_INET, 5, NULL);
+    //socket_server_task();
+    vTaskDelete(NULL);
 }

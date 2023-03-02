@@ -1,0 +1,1 @@
+char* HTML = R"(<h1>hola</h1>)";
