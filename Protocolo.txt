@@ -1,0 +1,44 @@
+N00*************************************************F
+
+N  nuevo mensaje
+00 tipo de mensaje
+   00	Configuracion parametro
+   01   Movimiento por paso eje
+   02   Efectuar x accion
+   03	Carga de codigo G
+  
+Dato  
+	para mensaje 01  -> S0.0001X+1000					
+	para mensaje 02  -> ir a zero en todos los ejes  ->  Zero*****************************************Zero
+					 -> ir a zero en eje x			 ->  ZeroX***************************************ZeroX
+					 -> ir a zero en eje y			 ->  ZeroY***************************************ZeroY
+					 -> ir a zero en eje z			 ->  ZeroZ***************************************ZeroZ
+					 -> ir a zero en eje a			 ->  ZeroA***************************************ZeroA
+					 -> Reset						 ->  Reset***************************************Reset
+					 -> Stop						 ->  Stop*****************************************Stop
+					 -> Rewind  					 ->  Rewind*************************************Rewind
+					 -> Start						 ->  Start***************************************Start
+					 -> Pause						 ->  Pause***************************************Pause
+	para mensaje 03  ->0000C***************************************f0000
+					   0000C   numero de linea a enviar
+					   f0000   numero de linea actual
+					   ***************************************  Texto Gcode
+					 
+					 
+	
+Desde aplicacion a esp:	
+
+N  nuevo mensaje
+00 tipo de mensaje
+   00	Configuracion parametro
+   01	Informacion ejes   				N01E+00000.0000x+00000.0000y+00000.0000z+00000.0000aF
+  
+   02   Informacion del proceso			N02EL00:00ES00:00NL0000LA0000***********************F
+   
+										EL00:00 = Elapsed time
+										ES00:00 = Estimative time
+										NL0000  = Numero de linea totales
+										LA0000	= Numero de linea actual
+   03   Confirmacion					N03Confirm:Gcode-load*******************************F
+   04	Aviso de conexion 				N04Conected*****************************************F
+   05	Mensaje de vivo					N05Vivo0000000**************************************F

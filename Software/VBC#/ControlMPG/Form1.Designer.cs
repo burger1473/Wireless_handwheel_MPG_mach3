@@ -36,6 +36,9 @@ namespace ControlMPG
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
+            this.Conexion_tcp_automatica = new System.Windows.Forms.Timer(this.components);
+            this.timer_tcpvivo = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // timer1
@@ -86,11 +89,34 @@ namespace ControlMPG
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(426, 237);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(157, 39);
+            this.button2.TabIndex = 5;
+            this.button2.Text = "Start server tcp";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // Conexion_tcp_automatica
+            // 
+            this.Conexion_tcp_automatica.Enabled = true;
+            this.Conexion_tcp_automatica.Interval = 500;
+            this.Conexion_tcp_automatica.Tick += new System.EventHandler(this.timer2_Tick);
+            // 
+            // timer_tcpvivo
+            // 
+            this.timer_tcpvivo.Enabled = true;
+            this.timer_tcpvivo.Interval = 1500;
+            this.timer_tcpvivo.Tick += new System.EventHandler(this.timer_tcpvivo_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.richTextBox1);
             this.Controls.Add(this.textBox2);
@@ -98,6 +124,7 @@ namespace ControlMPG
             this.Controls.Add(this.textBox1);
             this.Name = "Form1";
             this.Text = "Form1";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -112,6 +139,9 @@ namespace ControlMPG
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.RichTextBox richTextBox1;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Timer Conexion_tcp_automatica;
+        private System.Windows.Forms.Timer timer_tcpvivo;
     }
 }
 
