@@ -35,12 +35,14 @@
 #include <string.h>
 #include "driver/ledc.h"
 #include "sdkconfig.h"
+#include "mdns.h"
 
 //=========================== Definiciones ================================
-#define PORT_NUMBER 8001
+
 
 /*==================[Prototipos de funciones]======================*/
 void socket_server(void);
+esp_err_t wifi_event_handler2(void *ctx, system_event_t *event);
 
 //=========================== Variables ================================
 

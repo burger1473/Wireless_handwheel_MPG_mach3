@@ -226,7 +226,7 @@ char* HTML = R"(
 					</center>
                 </div>
                 <div class="inferior">
-                    <a href="#">Esp32 Configuracion Wifi - Cargador bateria</a>
+                    <a href="#">Esp32 Configuracion Wifi - Control MPG</a>
                 </div>
             </div>
         </div>

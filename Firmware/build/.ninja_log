@@ -2755,3 +2755,7 @@
 1175	3404	6994290749722111	bootloader/bootloader.bin	ac3fc3388b7ef1c8
 1175	3404	6994290749722111	bootloader/bootloader.map	ac3fc3388b7ef1c8
 2858	3596	6994787479191173	esp-idf/freemodbus/libfreemodbus.a	adc78b0c62c49b37
+43	37453	6994996063567014	build.ninja	d63178508dd7c5b3
+2	217283	0	CMakeFiles/menuconfig	60f3d4aa63ebedde
+26	27614	6995021788268716	build.ninja	d63178508dd7c5b3
+1	39169	0	CMakeFiles/menuconfig	60f3d4aa63ebedde

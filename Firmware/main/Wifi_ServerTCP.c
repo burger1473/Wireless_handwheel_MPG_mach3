@@ -13,38 +13,69 @@
 #include "../include/Wifi_ServerTCP.h"
 
 //=========================== Definiciones ================================
-#define PORT                        8001
-#define KEEPALIVE_IDLE              5
-#define KEEPALIVE_INTERVAL          5
-#define KEEPALIVE_COUNT             3
+#define PORT_NUMBER 8001
 
 //=========================== Variables ================================
 static char tag[] = "socket_server";
+int sock ;
 
 //=========================== Implementacion ================================
-static void sendData(int socket) {
-	char text[80];
-	int i;
-	for(i=1;i<=10;i++){
-		sprintf(text, "Message %d\n", i);
-		send(socket, text, strlen(text), 0);
-		vTaskDelay(1000/portTICK_PERIOD_MS);
-	}
-	close(socket);
+
+static void sendData(int sock) {
+	int len;
+    char rx_bufferr[128];
+
+    do {
+        len = recv(sock, rx_bufferr, sizeof(rx_bufferr) - 1, 0);
+        if (len < 0) {
+            ESP_LOGE(tag, "Error occurred during receiving: errno %d", errno);
+        } else if (len == 0) {
+            ESP_LOGW(tag, "Connection closed");
+        } else {
+            rx_bufferr[len] = 0; // Null-terminate whatever is received and treat it like a string
+            ESP_LOGI(tag, "Received %d bytes: %s", len, rx_bufferr);
+           
+        }
+    } while (len > 0);
 }
 
-/*
-esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
+
+esp_err_t wifi_event_handler2(void *ctx, system_event_t *event) {
     return ESP_OK;
 }
-*/
 
+/**
+
+Creates a new Wifi-AP on ESP32
+
+*/
+void Send_TCPmsg(int len, char rx_bufferr) {
+  // send() can return less bytes than supplied length.
+            // Walk-around for robust implementation.
+	int to_write = len;
+	while (to_write > 0) {
+		int written = send(sock, rx_bufferr + (len - to_write), to_write, 0);
+		if (written < 0) {
+			ESP_LOGE(tag, "Error occurred during sending: errno %d", errno);
+			// Failed to retransmit, giving up
+			return;
+		}
+		to_write -= written;
+	}
+}
+
+/**
+ * Create a listening socket.  We then wait for a client to connect.
+ * Once a client has connected, we then read until there is no more data
+ * and log the data read.  We then close the client socket and start
+ * waiting for a new connection.
+ */
 void socket_server_task(void *ignore) {
 	struct sockaddr_in clientAddress;
 	struct sockaddr_in serverAddress;
 
 	// Create a socket that we will listen upon.
-	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock < 0) {
 		ESP_LOGE(tag, "socket: %d %s", sock, strerror(errno));
 		goto END;
@@ -81,6 +112,7 @@ void socket_server_task(void *ignore) {
 	END:
 	vTaskDelete(NULL);
 }
+
 
 
 void socket_server(void) {

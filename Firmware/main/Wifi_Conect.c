@@ -196,9 +196,22 @@ void iniciarWifi_Modo_estacion(void)
         };
     #endif
 
+    tcpip_adapter_init();
+    esp_event_loop_init(wifi_event_handler2, NULL);
+    wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&wifi_init_config);
+    esp_wifi_set_storage(WIFI_STORAGE_RAM);
+
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) ); //Configura el modo STA (tambien puede ser AP o STA+AP)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) ); //Configura el WiFI segun el modo seleccionado
     ESP_ERROR_CHECK(esp_wifi_start() ); //Inicia el Wifi
+    
+    //initialize mDNS
+	ESP_ERROR_CHECK( mdns_init() );
+	//set mDNS hostname (required if you want to advertise services)
+	ESP_ERROR_CHECK( mdns_hostname_set("MPG000001") );
+    ESP_ERROR_CHECK( mdns_instance_name_set("MPG000001") );
+	ESP_LOGI(tag, "mdns hostname set to: [%s]", "MPG000001");
     ESP_LOGI(TAG, "Se finalizó la inicialización del WiFi.");
     
 
@@ -220,6 +233,7 @@ void iniciarWifi_Modo_estacion(void)
     if (bits & WIFI_CONNECTED_BIT) {  //Si se conecto
         ESP_LOGI(TAG, "Conectado al AP SSID:%s password:%s",
                  WIFI_SSID, WIFI_PASS);
+        socket_server();
     } else if (bits & WIFI_FAIL_BIT) { //Si fallo la conexion
         ESP_LOGI(TAG, "Fallo al conectar al AP SSID:%s, password:%s",
                  WIFI_SSID, WIFI_PASS);
