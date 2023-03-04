@@ -6,6 +6,7 @@ N  nuevo mensaje
    01   Movimiento por paso eje
    02   Efectuar x accion
    03	Carga de codigo G
+   04   Peticion de mensaje a cliente
   
 Dato  
 	para mensaje 01  -> S0.0001X+1000					
@@ -23,22 +24,35 @@ Dato
 					   0000C   numero de linea a enviar
 					   f0000   numero de linea actual
 					   ***************************************  Texto Gcode
-					 
+	para mensaje 04	 ->xx********************************************xx 
+					 -> donde xx es el numero de mensaje que se pide
 					 
 	
 Desde aplicacion a esp:	
 
 N  nuevo mensaje
 00 tipo de mensaje
-   00	Configuracion parametro
-   01	Informacion ejes   				N01E+00000.0000x+00000.0000y+00000.0000z+00000.0000aF
+   50	Configuracion parametro
+   51	Informacion ejes   				N01E+00000.0000x+00000.0000y+00000.0000z+00000.0000aF
   
-   02   Informacion del proceso			N02EL00:00ES00:00NL0000LA0000***********************F
+   52   Informacion del proceso			N02EL00:00ES00:00NL0000LA0000***********************F
    
 										EL00:00 = Elapsed time
 										ES00:00 = Estimative time
 										NL0000  = Numero de linea totales
 										LA0000	= Numero de linea actual
-   03   Confirmacion					N03Confirm:Gcode-load*******************************F
-   04	Aviso de conexion 				N04Conected*****************************************F
-   05	Mensaje de vivo					N05Vivo0000000**************************************F
+   53   Confirmacion					N53Confirm:Gcode-load*******************************F
+   54	Aviso de conexion 				N54Conected*****************************************F
+   55	Mensaje de vivo					N55Vivo0000000**************************************F
+   
+   
+   
+Ejemplo carga gcode:
+
+
+
+N030001CG015***********************************f0005F
+N030002CG645***********************************f0005F
+N030003CG395***********************************f0005F
+N030004CH214***********************************f0005F
+N030005CB687***********************************f0005F
