@@ -43,6 +43,7 @@
 /*==================[Prototipos de funciones]======================*/
 void socket_server(void);
 esp_err_t wifi_event_handler2(void *ctx, system_event_t *event);
+void sendData(char *buffer, int caracteres);
 
 //=========================== Variables ================================
 

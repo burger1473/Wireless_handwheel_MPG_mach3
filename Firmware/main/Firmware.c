@@ -37,19 +37,43 @@
 #include "soc/soc.h" //disable brownout detector
 #include "soc/rtc_cntl_reg.h" //disable brownout detector (deteccion de apagon)
 #include "soc/rtc_wdt.h" //disable brownout detector
+#include <esp32/rom/ets_sys.h>    //Para retardo bloqueando todo el planificador
 #include "../include/Wifi_Conect.h" //Libreria para generar un AP para configurar SSID y Password del WIFI al conectarse
                                     //Luego de detecar el wifi y poder conectarse, funciona en wifi estacion
-
-
+#include "../include/LCD.h"
+#include "../include/ControlMPG.h"
+//#include "../include/SDcard.h"
 
 
 void app_main() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
     rtc_wdt_protect_off();
     rtc_wdt_disable();
-    
+    //SD_init();
+
+    LCD_init();
+    LCDGotoXY(5, 1);
+    LCD_print("ControlMPG");
+    LCDGotoXY(5, 2);
+    LCD_print("Bienvenido");
+
+    ets_delay_us(5000000);
     iniciarWifi();        //Inicio WIFI en modo dual
-           
+    ControlMPG_init();
+    /*
+    LCD_init();
+    LCDGotoXY(0, 0);
+    LCD_print("--- ---");
+    LCDGotoXY(10, 0);
+    LCD_print("ControlMPG");
+    LCDGotoXY(0, 1);
+    LCD_print("X:     +2.6162");
+    LCDGotoXY(0, 2);
+    LCD_print("Y:     +1.3808");
+    LCDGotoXY(0, 3);
+    LCD_print("Z:     -1.5034");
+    */
+
     ESP_LOGI(TAG, "Finaliza app_main\n");
 
 }

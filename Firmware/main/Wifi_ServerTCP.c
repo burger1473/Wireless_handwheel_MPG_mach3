@@ -18,10 +18,11 @@
 //=========================== Variables ================================
 static char tag[] = "socket_server";
 int sock ;
-
+int cliente;
+int haycliente=0;
 //=========================== Implementacion ================================
 
-static void sendData(int sock) {
+static void readData(int sock) {
 	int len;
     char rx_bufferr[128];
 
@@ -39,6 +40,23 @@ static void sendData(int sock) {
     } while (len > 0);
 }
 
+void sendData(char *buffer, int caracteres) {
+	if(haycliente>0){
+		int sock=cliente;
+		int len=caracteres;
+
+		int to_write = len;
+		while (to_write > 0) {
+			int written = send(sock, buffer + (len - to_write), to_write, 0);
+			if (written < 0) {
+				ESP_LOGE(tag, "Error occurred during sending: errno %d", errno);
+				// Failed to retransmit, giving up
+				return;
+			}
+			to_write -= written;
+		}
+	}
+}
 
 esp_err_t wifi_event_handler2(void *ctx, system_event_t *event) {
     return ESP_OK;
@@ -63,6 +81,7 @@ void Send_TCPmsg(int len, char rx_bufferr) {
 		to_write -= written;
 	}
 }
+
 
 /**
  * Create a listening socket.  We then wait for a client to connect.
@@ -107,7 +126,10 @@ void socket_server_task(void *ignore) {
 			ESP_LOGE(tag, "accept: %d %s", clientSock, strerror(errno));
 			goto END;
 		}
-		sendData(clientSock);
+		cliente =clientSock;
+		haycliente++;
+		readData(clientSock);
+		vTaskDelay(5/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
 	}
 	END:
 	vTaskDelete(NULL);
