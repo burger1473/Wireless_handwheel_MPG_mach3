@@ -36,14 +36,20 @@
 #include "driver/ledc.h"
 #include "sdkconfig.h"
 #include "mdns.h"
+#include "esp_netif.h"
+#include "lwip/err.h"
+#include "lwip/sys.h"
 
 //=========================== Definiciones ================================
-
+#define mDNShostName "MPG000001"
 
 /*==================[Prototipos de funciones]======================*/
-void socket_server(void);
-esp_err_t wifi_event_handler2(void *ctx, system_event_t *event);
-void sendData(char *buffer, int caracteres);
+void ServerTCP_configwifi(void);
+void ServerTCP_configmDNS(void);
+bool ServerTCP_socket_init(uint8_t prioridad);
+bool ServerTCP_sendData(char *buffer, int len);
+bool ServerTCP_leermensaje(uint8_t *lenn, char *buffer);
+
 
 //=========================== Variables ================================
 

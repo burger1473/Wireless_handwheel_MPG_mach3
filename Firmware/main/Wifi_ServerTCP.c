@@ -16,88 +16,101 @@
 #define PORT_NUMBER 8001
 
 //=========================== Variables ================================
-static char tag[] = "socket_server";
-int sock ;
-int cliente;
-int haycliente=0;
+const static char *tag = "socketServer";
+struct sockaddr_in clientAddress;
+struct sockaddr_in serverAddress;
+int sock;
+int clientSock;
+uint8_t hay_cliente=0;
+TaskHandle_t TaskHandle_2 = NULL;
+int len_ext;
+char rx_buffer_ext[128];
+portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; //Inicializa el spinlock desbloqueado
+bool hay_mensaje_nuevo=false;
+
+//=========================== Prototipos ================================
+esp_err_t wifi_event_handler2(void *ctx, system_event_t *event);
+static void Socket_task(void *pvParameters);
+
 //=========================== Implementacion ================================
 
-static void readData(int sock) {
-	int len;
-    char rx_bufferr[128];
+void ServerTCP_configwifi(void){
+	tcpip_adapter_init();
+    esp_event_loop_init(wifi_event_handler2, NULL);
+    wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&wifi_init_config);
+    esp_wifi_set_storage(WIFI_STORAGE_RAM);
+}
 
-    do {
-        len = recv(sock, rx_bufferr, sizeof(rx_bufferr) - 1, 0);
+void ServerTCP_configmDNS(void){
+	//initialize mDNS
+	ESP_ERROR_CHECK( mdns_init() );
+	//set mDNS hostname (required if you want to advertise services)
+	ESP_ERROR_CHECK( mdns_hostname_set(mDNShostName) );
+    ESP_ERROR_CHECK( mdns_instance_name_set(mDNShostName) );
+	ESP_LOGI(tag, "mdns hostname set to: [%s]", mDNShostName);
+    ESP_LOGI(tag, "Se finalizó la inicialización del WiFi.");
+}
+
+bool ServerTCP_readData() {
+    int len;
+	char rx_bufferr[128];
+	do {
+        len = recv(clientSock, rx_bufferr, sizeof(rx_bufferr) - 1, 0);
         if (len < 0) {
             ESP_LOGE(tag, "Error occurred during receiving: errno %d", errno);
+			return false;
         } else if (len == 0) {
             ESP_LOGW(tag, "Connection closed");
+			return false;
         } else {
             rx_bufferr[len] = 0; // Null-terminate whatever is received and treat it like a string
             ESP_LOGI(tag, "Received %d bytes: %s", len, rx_bufferr);
-           
+			//portENTER_CRITICAL(&mux);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
+			len_ext=len;
+			for(uint8_t i=0; i<128; i++){
+				rx_buffer_ext[i]=rx_buffer_ext[i];
+			}
+			//portEXIT_CRITICAL(&mux);                                //Salgo seccion critica
+            hay_mensaje_nuevo=true;
+			return true;
         }
     } while (len > 0);
 }
 
-void sendData(char *buffer, int caracteres) {
-	if(haycliente>0){
-		int sock=cliente;
-		int len=caracteres;
-
+bool ServerTCP_sendData(char *buffer, int len) {
+	bool retorno = true;
+	if(hay_cliente==1){
 		int to_write = len;
 		while (to_write > 0) {
-			int written = send(sock, buffer + (len - to_write), to_write, 0);
+			int written = send(clientSock, buffer + (len - to_write), to_write, 0);
 			if (written < 0) {
 				ESP_LOGE(tag, "Error occurred during sending: errno %d", errno);
 				// Failed to retransmit, giving up
-				return;
+				hay_cliente=0;
+				retorno=false;
+				break;
 			}
 			to_write -= written;
 		}
+	}else{
+		retorno=false;
 	}
+    
+	return retorno;
 }
 
 esp_err_t wifi_event_handler2(void *ctx, system_event_t *event) {
     return ESP_OK;
 }
 
-/**
 
-Creates a new Wifi-AP on ESP32
-
-*/
-void Send_TCPmsg(int len, char rx_bufferr) {
-  // send() can return less bytes than supplied length.
-            // Walk-around for robust implementation.
-	int to_write = len;
-	while (to_write > 0) {
-		int written = send(sock, rx_bufferr + (len - to_write), to_write, 0);
-		if (written < 0) {
-			ESP_LOGE(tag, "Error occurred during sending: errno %d", errno);
-			// Failed to retransmit, giving up
-			return;
-		}
-		to_write -= written;
-	}
-}
-
-
-/**
- * Create a listening socket.  We then wait for a client to connect.
- * Once a client has connected, we then read until there is no more data
- * and log the data read.  We then close the client socket and start
- * waiting for a new connection.
- */
-void socket_server_task(void *ignore) {
-	struct sockaddr_in clientAddress;
-	struct sockaddr_in serverAddress;
-
+bool ServerTCP_socket_init(uint8_t prioridad){
 	// Create a socket that we will listen upon.
 	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock < 0) {
 		ESP_LOGE(tag, "socket: %d %s", sock, strerror(errno));
-		goto END;
+		return false;
 	}
 
 	// Bind our server socket to a port.
@@ -107,39 +120,63 @@ void socket_server_task(void *ignore) {
 	int rc  = bind(sock, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
 	if (rc < 0) {
 		ESP_LOGE(tag, "bind: %d %s", rc, strerror(errno));
-		goto END;
+		return false;
 	}
 
 	// Flag the socket as listening for new connections.
 	rc = listen(sock, 5);
 	if (rc < 0) {
 		ESP_LOGE(tag, "listen: %d %s", rc, strerror(errno));
-		goto END;
+		return false;
 	}
 
-	while (1) {
+	esp_err_t ret = xTaskCreate(&Socket_task, "Socket_task", 3072, NULL, prioridad, &TaskHandle_2); //Creo tarea
+    if (ret != pdPASS)  {
+        return false;
+    }
+
+	return true;
+}
+
+bool ServerTCP_buscarcliente(){
 		// Listen for a new client connection.
 		ESP_LOGD(tag, "Waiting for new client connection");
 		socklen_t clientAddressLength = sizeof(clientAddress);
-		int clientSock = accept(sock, (struct sockaddr *)&clientAddress, &clientAddressLength);
+		clientSock = accept(sock, (struct sockaddr *)&clientAddress, &clientAddressLength);
 		if (clientSock < 0) {
 			ESP_LOGE(tag, "accept: %d %s", clientSock, strerror(errno));
-			goto END;
+			hay_cliente=0;
+			return false;
 		}
-		cliente =clientSock;
-		haycliente++;
-		readData(clientSock);
-		vTaskDelay(5/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
+		hay_cliente=1;
+		return true;
+} 
+
+static void Socket_task(void *pvParameters) {
+	while(true){
+
+		if(ServerTCP_buscarcliente()==true){ 
+			
+		}
+		if(ServerTCP_readData() == true){  //Si se pudo leer el mensaje
+			
+		}
+		vTaskDelay(5/portTICK_PERIOD_MS) ;      // Delay para retardo del contador
 	}
-	END:
-	vTaskDelete(NULL);
 }
 
-
-
-void socket_server(void) {
-    //ESP_ERROR_CHECK(esp_event_loop_create_default());
-  xTaskCreate(socket_server_task, "tcp_server", 4096, (void*)AF_INET, 5, NULL);
+bool ServerTCP_leermensaje(uint8_t *lenn, char *buffer){
+	if (hay_mensaje_nuevo==true){
+		//portENTER_CRITICAL(&mux);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
+		*lenn=len_ext;
+		for(uint8_t i=0; i<128; i++){
+			buffer[i]=rx_buffer_ext[i];
+		}
+		//portEXIT_CRITICAL(&mux);                                //Salgo seccion critica
+		hay_mensaje_nuevo=false;
+		return true;
+	}else{
+		return false;
+	}
+	
 }
-
-

@@ -59,20 +59,10 @@ void app_main() {
 
     ets_delay_us(5000000);
     iniciarWifi();        //Inicio WIFI en modo dual
-    ControlMPG_init();
-    /*
-    LCD_init();
-    LCDGotoXY(0, 0);
-    LCD_print("--- ---");
-    LCDGotoXY(10, 0);
-    LCD_print("ControlMPG");
-    LCDGotoXY(0, 1);
-    LCD_print("X:     +2.6162");
-    LCDGotoXY(0, 2);
-    LCD_print("Y:     +1.3808");
-    LCDGotoXY(0, 3);
-    LCD_print("Z:     -1.5034");
-    */
+    //iniciarWifi()  crea una tarea que maneja todo el periferico wifi.
+    //Cuando se puede conectar a la red AP o cuando crea su poropio wifi (sta)
+    //llama a ControlMPG_init() (ver lineas 236 y 432 de Wifi_Conect.c)
+    //ControlMPG_init() crea una tarea encargada de realizar todas las acciones del control
 
     ESP_LOGI(TAG, "Finaliza app_main\n");
 
