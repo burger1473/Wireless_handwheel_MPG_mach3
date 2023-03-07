@@ -11,8 +11,14 @@
 #include "../include/SDcard.h"
 
 /*===================================================[Prototipos de funciones]===============================================*/
+
 /*===================================================[Variables]===============================================*/
 static const char *TAGGG = "SDcard";
+bool montado=false;
+DIR* dir;
+struct dirent* entry;
+bool archivo_abirto=false;
+uint8_t numero_list=0;
 
 /*===================================================[Implementaciones]===============================================*/
 
@@ -53,6 +59,86 @@ static esp_err_t s_example_read_file(const char *path)
     return ESP_OK;
 }
 
+
+void SD_abrir_archivo(void){
+    if(montado==true){
+        // Abrir directorio raíz
+        dir=opendir("/sdcard");
+        archivo_abirto=true;
+        return true;
+    }
+    return false;
+}
+
+bool SD_cerrar_archivo(void){
+    if(montado==true){
+        if(archivo_abirto==true){
+            // Cerrar directorio
+            closedir(dir);
+            archivo_abirto=false;
+            return true;
+        }
+        return false;
+    }
+    return false;
+}
+
+
+bool SD_buscar_enlist(char *nombre, bool siguiente){
+    if(montado==true){
+        if(siguiente==true){numero_list++;}else{numero_list--;}
+        if(numero_list<1){numero_list=1;}
+        uint8_t numeros_existentes=0;
+        //Cuento la cantidad de archivos que existen
+        // Abrir directorio raíz
+        DIR* dir2=opendir("/sdcard");
+        struct dirent* entry2;
+
+        // Leer nombres de archivos
+        while((entry2=readdir(dir2))!=NULL){
+            numeros_existentes++;
+        }
+        if(numero_list>numeros_existentes){numero_list=numeros_existentes;}
+        // Cerrar directorio
+        closedir(dir2);
+
+        //Cuento la cantidad de archivos que existen
+        // Abrir directorio raíz
+        DIR* dir=opendir("/sdcard");
+        struct dirent* entry;
+
+        bool retrono_int=false;
+        for(uint8_t i=0; i<numero_list; i++){
+            // Leer nombres de archivos
+            if((entry=readdir(dir))!=NULL){
+                if(entry->d_type==DT_REG){              //Si es tipo de archivo
+                    //printf("Nombre de archivo: %s\n", entry->d_name);
+                    //nombre=entry->d_name;
+                    strcpy(nombre, entry->d_name);
+                    retrono_int=true;
+                    //ESP_LOGI(TAGGG, "Nombre de archivo: %s", entry->d_name);
+                }
+            }else{
+                retrono_int=false;
+            }
+        }
+        closedir(dir);
+        if(retrono_int==false){strcpy(nombre, "NoFile");}
+        return retrono_int;  
+    } 
+    return false;  
+}
+
+bool Sd_unmout_list(void){
+    if(montado==true){
+        esp_vfs_fat_sdmmc_unmount();
+        montado=false;
+        return true;
+    }
+    return false;
+}
+
+
 void SD_init(void){
     ESP_LOGI(TAGGG, "Init SD");
     esp_err_t ret;
@@ -61,11 +147,11 @@ void SD_init(void){
     // If format_if_mount_failed is set to true, SD card will be partitioned and
     // formatted in case when mounting fails.
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-#ifdef CONFIG_EXAMPLE_FORMAT_IF_MOUNT_FAILED
+    #ifdef CONFIG_EXAMPLE_FORMAT_IF_MOUNT_FAILED
         .format_if_mount_failed = true,
-#else
+    #else
         .format_if_mount_failed = false,
-#endif // EXAMPLE_FORMAT_IF_MOUNT_FAILED
+    #endif // EXAMPLE_FORMAT_IF_MOUNT_FAILED
         .max_files = 5,
         .allocation_unit_size = 16 * 1024
     };
@@ -117,7 +203,9 @@ void SD_init(void){
         }
         return;
     }
+    
     ESP_LOGI(TAGGG, "Filesystem mounted");
+    montado=true;
 
     // Card has been initialized, print its properties
     //sdmmc_card_print_info(stdout, card);
@@ -135,5 +223,5 @@ void SD_init(void){
     }
     // Cerrar directorio
     closedir(dir);
-    esp_vfs_fat_sdmmc_unmount();
+    //esp_vfs_fat_sdmmc_unmount();
 }

@@ -36,6 +36,7 @@
 #include <dirent.h>
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
+#include <stdlib.h>
 
 #define PIN_NUM_MISO  GPIO_NUM_19
 #define PIN_NUM_MOSI  GPIO_NUM_23
@@ -46,6 +47,10 @@
 #define MOUNT_POINT "/sdcard"
 
 /*==================[Prototipos de funciones]======================*/
+bool Sd_unmout_list(void);
+void SD_abrir_archivo(void);
+bool SD_buscar_enlist(char *nombre, bool siguiente);
+bool SD_cerrar_archivo(void);
 void SD_init(void);
 
 //=========================== Variables ================================
