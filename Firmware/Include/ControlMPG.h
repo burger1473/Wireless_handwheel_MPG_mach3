@@ -21,6 +21,7 @@
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include <esp_log.h>
 
 /*==================[Prototipos de funciones]======================*/
 void ControlMPG_init(void);

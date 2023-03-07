@@ -11,6 +11,7 @@
 /*===================================================[ Inclusiones ]===============================================*/
 
 #include "../include/Wifi_ServerTCP.h"
+//#include "freertos/semphr.h" //librería para el uso de semaforos
 
 //=========================== Definiciones ================================
 #define PORT_NUMBER 8001
@@ -27,6 +28,7 @@ int len_ext;
 char rx_buffer_ext[128];
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; //Inicializa el spinlock desbloqueado
 bool hay_mensaje_nuevo=false;
+//SemaphoreHandle_t semaforo_socket = NULL; //Puntero al semaforo
 
 //=========================== Prototipos ================================
 esp_err_t wifi_event_handler2(void *ctx, system_event_t *event);
@@ -52,36 +54,47 @@ void ServerTCP_configmDNS(void){
     ESP_LOGI(tag, "Se finalizó la inicialización del WiFi.");
 }
 
-bool ServerTCP_readData() {
-    int len;
-	char rx_bufferr[128];
-	do {
-        len = recv(clientSock, rx_bufferr, sizeof(rx_bufferr) - 1, 0);
-        if (len < 0) {
-            ESP_LOGE(tag, "Error occurred during receiving: errno %d", errno);
-			return false;
-        } else if (len == 0) {
-            ESP_LOGW(tag, "Connection closed");
-			return false;
-        } else {
-            rx_bufferr[len] = 0; // Null-terminate whatever is received and treat it like a string
-            ESP_LOGI(tag, "Received %d bytes: %s", len, rx_bufferr);
-			//portENTER_CRITICAL(&mux);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
-			len_ext=len;
-			for(uint8_t i=0; i<128; i++){
-				rx_buffer_ext[i]=rx_buffer_ext[i];
+bool ServerTCP_readData(void) {
+    //xSemaphoreTake(semaforo_socket, portMAX_DELAY); //Tomo semaforo para evitar que se intente enviar y recibir mensajes tcp/ip al mismo tiempo
+	if(hay_cliente==1){
+		int len;
+		char rx_bufferr[128];
+		do {
+			len = recv(clientSock, rx_bufferr, sizeof(rx_bufferr) - 1, 0); // Bloquea la tarea hasta recibir dato
+			if (len < 0) {
+				ESP_LOGE(tag, "Error occurred during receiving: errno %d", errno);
+				hay_cliente=0;
+				return false;
+			} else if (len == 0) {
+				ESP_LOGW(tag, "Connection closed");
+				hay_cliente=0;
+				return false;
+			} else {
+				rx_bufferr[len] = 0; // Null-terminate whatever is received and treat it like a string
+				ESP_LOGI(tag, "Received %d bytes: %s", len, rx_bufferr);
+				portENTER_CRITICAL(&mux);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
+				hay_mensaje_nuevo=true;
+				len_ext=len;
+				for(uint8_t i=0; i<128; i++){
+					rx_buffer_ext[i]=rx_bufferr[i];
+				}
+				portEXIT_CRITICAL(&mux);                                //Salgo seccion critica
+				return true;
 			}
-			//portEXIT_CRITICAL(&mux);                                //Salgo seccion critica
-            hay_mensaje_nuevo=true;
-			return true;
-        }
-    } while (len > 0);
+		} while (len > 0);
+	}else{
+		return false;
+	}
+	
+	//xSemaphoreGive(semaforo_socket);			//Libero semaforo
 }
 
 bool ServerTCP_sendData(char *buffer, int len) {
+	//xSemaphoreTake(semaforo_socket, portMAX_DELAY); //Tomo semaforo para evitar que se intente enviar y recibir mensajes tcp/ip al mismo tiempo
 	bool retorno = true;
 	if(hay_cliente==1){
 		int to_write = len;
+		ESP_LOGI(tag, "Send %d bytes: %s", len, buffer);
 		while (to_write > 0) {
 			int written = send(clientSock, buffer + (len - to_write), to_write, 0);
 			if (written < 0) {
@@ -96,7 +109,7 @@ bool ServerTCP_sendData(char *buffer, int len) {
 	}else{
 		retorno=false;
 	}
-    
+    //xSemaphoreGive(semaforo_socket);			//Libero semaforo
 	return retorno;
 }
 
@@ -153,30 +166,43 @@ bool ServerTCP_buscarcliente(){
 } 
 
 static void Socket_task(void *pvParameters) {
+    //semaforo_socket = xSemaphoreCreateBinary(); //Crear el semáforo (arranca “tomado”)
+	//xSemaphoreGive(semaforo_socket);			//Libero semaforo
+    /*
+	if(semaforo_socket == NULL)
+    {
+		ESP_LOGE(tag, "No se pudo crear el semaforo");
+        //while(true);
+    }
+	*/
 	while(true){
-
-		if(ServerTCP_buscarcliente()==true){ 
-			
-		}
-		if(ServerTCP_readData() == true){  //Si se pudo leer el mensaje
-			
+		if(hay_cliente==0){
+			if(ServerTCP_buscarcliente()==true){ 
+			}
+		}else{
+			if(ServerTCP_readData() == true){  //Si se pudo leer el mensaje. Bloquea la tarea hasta recibir dato
+				
+			}
 		}
 		vTaskDelay(5/portTICK_PERIOD_MS) ;      // Delay para retardo del contador
 	}
 }
 
-bool ServerTCP_leermensaje(uint8_t *lenn, char *buffer){
+uint8_t ServerTCP_leermensaje(char *buffer){
 	if (hay_mensaje_nuevo==true){
-		//portENTER_CRITICAL(&mux);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
-		*lenn=len_ext;
+		//ESP_LOGE(tag, "LL: %d", len_ext);
+		int variable_local=0;
+		portENTER_CRITICAL(&mux);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
+		variable_local=len_ext;
 		for(uint8_t i=0; i<128; i++){
 			buffer[i]=rx_buffer_ext[i];
 		}
-		//portEXIT_CRITICAL(&mux);                                //Salgo seccion critica
 		hay_mensaje_nuevo=false;
-		return true;
+		portEXIT_CRITICAL(&mux);                                //Salgo seccion critica
+		
+		return variable_local;
 	}else{
-		return false;
+		return 0;
 	}
 	
 }

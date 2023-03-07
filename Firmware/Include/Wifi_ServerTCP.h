@@ -48,7 +48,8 @@ void ServerTCP_configwifi(void);
 void ServerTCP_configmDNS(void);
 bool ServerTCP_socket_init(uint8_t prioridad);
 bool ServerTCP_sendData(char *buffer, int len);
-bool ServerTCP_leermensaje(uint8_t *lenn, char *buffer);
+uint8_t ServerTCP_leermensaje(char *buffer);
+bool ServerTCP_readData(void);
 
 
 //=========================== Variables ================================

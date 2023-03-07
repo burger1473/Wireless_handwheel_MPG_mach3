@@ -50,7 +50,6 @@ void LCD_init(void);
 void LCDsendChar(uint8_t Dato);
 void LCDGotoXY(uint8_t columna, uint8_t fila);   //Cursor to X Y position empieza de cero
 void LCD_print(char * str);
-void LCD_println(char * str);
 void LCDclr(void);		            //Limpia Display y  Envia el cursor a la posicion inicial - Clears LCD  and send  Cursor home
 void LCDhome(void);		            //Envia el cursor a la posicion inicial - LCD cursor home
 void LCDcursorOn(void);
@@ -65,7 +64,7 @@ void LCDcursorLeft(uint8_t n);
 void LCDcursorRight(uint8_t n);
 void LCDshiftLeft(uint8_t n);
 void LCDshiftRight(uint8_t n);
-
+void LCD_print_char(char str);
 
 //=========================== Variables ================================
 

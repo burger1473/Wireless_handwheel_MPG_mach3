@@ -6,7 +6,7 @@
  *
  * Descripcion: Libreria para comandar Display LCD 20x4 por medio de 4 bits
  *
- * IMPORTANTE: esta libreria usa delays bloqueantes de todo el planificador!!!
+ * IMPORTANTE: esta libreria usa delays bloqueantes de todo el planificador!!! y Ademas usa seccion critica
  *===========================================================================*/
 
 /*===================================================[ Inclusiones ]===============================================*/
@@ -21,6 +21,7 @@ void LCD_EnableChar(void);
 void LCD_EnableCmd(void);
 void LCDsend_nibble(uint8_t Dat);	//ENVIA EL COMANDO AL LCD
 /*===================================================[Variables]===============================================*/
+portMUX_TYPE mux2 = portMUX_INITIALIZER_UNLOCKED; //Inicializa el spinlock desbloqueado
 
 /*===================================================[Implementaciones]===============================================*/
 
@@ -111,26 +112,25 @@ void LCD_init(void){
 }
 
 void LCD_print(char * str){
+    portENTER_CRITICAL(&mux2);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
     unsigned char i = 0;
 	while (str[i] !=0)
 	{
 		LCDsendChar(str[i]);
 		i++ ;
 	}
+    portEXIT_CRITICAL(&mux2);                                //Salgo seccion critica
 }
 
-void LCD_println(char * str){
-    unsigned char i = 0;
-	while (str[i] !=0)
-	{
-		LCDsendChar(str[i]);
-		i++ ;
-	}
-    LCDsendChar('\n');
+void LCD_print_char(char str){
+    portENTER_CRITICAL(&mux2);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
+    LCDsendChar(str);
+    portEXIT_CRITICAL(&mux2);                                //Salgo seccion critica
 }
 
 void LCDGotoXY(uint8_t columna, uint8_t fila)	//POSICIONA EL CURSOR EN X y Y
 {
+    portENTER_CRITICAL(&mux2);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
 	register uint8_t DDRAMAddr;
 
 	switch(fila)
@@ -143,6 +143,7 @@ void LCDGotoXY(uint8_t columna, uint8_t fila)	//POSICIONA EL CURSOR EN X y Y
 	}
 	
 	LCDsendCommand(1<<LCD_DDRAM | DDRAMAddr);
+    portEXIT_CRITICAL(&mux2);                                //Salgo seccion critica
 }
 
 
@@ -204,8 +205,10 @@ void LCDsendCommand(uint8_t Dato)
 
 void LCDclr(void)
 {	
+    portENTER_CRITICAL(&mux2);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
 	LCDsendCommand(0b00000001);//Limpiar Display 
 	LCDhome();
+    portEXIT_CRITICAL(&mux2);                                //Salgo seccion critica
 }
 
 void LCDhome(void)
