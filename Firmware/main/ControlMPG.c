@@ -95,6 +95,21 @@ void ControlMPG_init(void){
     }
     Teclado_init();
     SD_init();
+
+    char nombree[256];
+    memset(nombree, 0, sizeof(nombree));
+    SD_buscar_enlist(nombree, true);       //Busca archivo siguiente
+    ESP_LOGI(TAGGG, "File %s", nombree);
+    SD_buscar_enlist(nombree, false);
+    ESP_LOGI(TAGGG, "File %s", nombree);   //Busca archivo anterior
+    if(false==true){                       //Pulsador enter
+        /*
+        char buffer[54];
+        strcpy(buffer, "N0451*********************************************51F");
+        if(ServerTCP_sendData(buffer, 53)==true){}
+        */
+    }                  
+
 }
 
 static void ControlMPG(void *pvParameters) {
