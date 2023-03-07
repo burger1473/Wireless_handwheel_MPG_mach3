@@ -203,7 +203,7 @@ void iniciarWifi_Modo_estacion(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) ); //Configura el WiFI segun el modo seleccionado
     ESP_ERROR_CHECK(esp_wifi_start() ); //Inicia el Wifi
     
-    //ServerTCP_configmDNS();
+    ServerTCP_configmDNS();
     
 
     /*

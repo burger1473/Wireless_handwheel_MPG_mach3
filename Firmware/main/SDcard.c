@@ -209,7 +209,7 @@ void SD_init(void){
 
     // Card has been initialized, print its properties
     //sdmmc_card_print_info(stdout, card);
-
+    /*
     // Abrir directorio raíz
     DIR* dir=opendir("/sdcard");
     struct dirent* entry;
@@ -223,5 +223,6 @@ void SD_init(void){
     }
     // Cerrar directorio
     closedir(dir);
+    */
     //esp_vfs_fat_sdmmc_unmount();
 }
