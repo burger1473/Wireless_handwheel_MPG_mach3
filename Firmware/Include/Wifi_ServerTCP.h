@@ -46,6 +46,7 @@
 /*==================[Prototipos de funciones]======================*/
 void ServerTCP_configwifi(void);
 void ServerTCP_configmDNS(void);
+void ServerTCP_mDNS_addService(uint8_t port);
 bool ServerTCP_socket_init(uint8_t prioridad);
 bool ServerTCP_sendData(char *buffer, int len);
 uint8_t ServerTCP_leermensaje(char *buffer);

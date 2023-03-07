@@ -13,6 +13,7 @@
 #include <esp32/rom/ets_sys.h>    //Para retardo bloqueando todo el planificador
 #include "../include/LCD.h"
 #include "../include/Wifi_ServerTCP.h"
+#include "../include/SDcard.h"
 
 /*===================================================[Prototipos de funciones]===============================================*/
 static void ControlMPG(void *pvParameters);
@@ -93,6 +94,7 @@ void ControlMPG_init(void){
         esp_restart();
     }
     Teclado_init();
+    SD_init();
 }
 
 static void ControlMPG(void *pvParameters) {

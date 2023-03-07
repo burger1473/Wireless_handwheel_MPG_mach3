@@ -44,6 +44,10 @@ void ServerTCP_configwifi(void){
     esp_wifi_set_storage(WIFI_STORAGE_RAM);
 }
 
+void ServerTCP_mDNS_addService(uint8_t port){
+	mdns_service_add(NULL, "_http", "_tcp", port, NULL, 0);
+}
+
 void ServerTCP_configmDNS(void){
 	//initialize mDNS
 	ESP_ERROR_CHECK( mdns_init() );

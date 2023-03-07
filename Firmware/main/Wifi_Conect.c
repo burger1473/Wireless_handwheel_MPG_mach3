@@ -203,7 +203,7 @@ void iniciarWifi_Modo_estacion(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) ); //Configura el WiFI segun el modo seleccionado
     ESP_ERROR_CHECK(esp_wifi_start() ); //Inicia el Wifi
     
-    ServerTCP_configmDNS();
+    //ServerTCP_configmDNS();
     
 
     /*
@@ -390,10 +390,12 @@ void wifi_init_softap(void)
     //esp_wifi_init(&wifi_init_config);
     esp_wifi_set_storage(WIFI_STORAGE_RAM);
 
+ 
+    ServerTCP_configwifi();
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));               //Selecciono el wifi en modo AP y verifico errores
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config)); //Configuro el AP y verifico errores
     ESP_ERROR_CHECK(esp_wifi_start());                              //Cominezo el Wifi en modo AP
-
+    ServerTCP_configmDNS();
     ESP_LOGI(TAG, "wifi_init_softap finished. SSID:%s password:%s channel:%d",
              EXAMPLE_ESP_WIFI_SSID_AP, EXAMPLE_ESP_WIFI_PASS_AP, EXAMPLE_ESP_WIFI_CHANNEL);
 }
@@ -420,6 +422,8 @@ static httpd_handle_t start_webserver(void)
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &principal); //Registro el evento cuando se llama al server con la url principal ("/") Esto se establecio en este archivo en el aparado de variables, arriba de todo (principal)
+        ServerTCP_configmDNS();
+        ServerTCP_mDNS_addService(80);
         ControlMPG_init();
         return server; //Retorno el puntero del evento del servidor
     }

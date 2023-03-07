@@ -42,14 +42,13 @@
                                     //Luego de detecar el wifi y poder conectarse, funciona en wifi estacion
 #include "../include/LCD.h"
 #include "../include/ControlMPG.h"
-//#include "../include/SDcard.h"
+
 
 
 void app_main() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
     rtc_wdt_protect_off();
     rtc_wdt_disable();
-    //SD_init();
 
     LCD_init();
     LCDGotoXY(5, 1);
