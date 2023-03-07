@@ -125,8 +125,7 @@ namespace COMPLETE_FLAT_UI
                 {
                     try
                     {
-                       // clientSocket.Disconnect(true);
-                        clientSocket.Close();
+                        client.Close();
                     }
                     catch (Exception)
                     {
@@ -289,14 +288,18 @@ namespace COMPLETE_FLAT_UI
         //string ip = "192.168.1.113";
         string ip;
         int puerto_server1 = 8001;
-        private Socket clientSocket;
+        TcpClient client;
+        NetworkStream stream;
+        int i = 0;
+        string data;
         private byte[] buffer;
         bool tcp_conected = false;
-        int msg_tcp_enviando = 0;
         String M51 = "N***************************************************F";
         String M52 = "N***************************************************F";
         int lineas_agregadas = 0;
         string path = Directory.GetCurrentDirectory() + "/tempgcode.gcode";
+        int watchdog_socker = 0;
+
 
         private void GetMachInstance()
         {
@@ -328,19 +331,22 @@ namespace COMPLETE_FLAT_UI
 
                 
                 String signox, signoy, signoz, signoa;
-                if (float.Parse(x) >= 0) { signox = "+"; } else { signox = "-"; }
-                if (float.Parse(y) >= 0) { signoy = "+"; } else { signoy = "-"; }
-                if (float.Parse(z) >= 0) { signoz = "+"; } else { signoz = "-"; }
-                if (float.Parse(a) >= 0) { signoa = "+"; } else { signoa = "-"; }
+                if (float.Parse(x) >= 0) { signox = "+"; } else { signox = ""; }  //El signo menos se coloca solo.
+                if (float.Parse(y) >= 0) { signoy = "+"; } else { signoy = ""; }
+                if (float.Parse(z) >= 0) { signoz = "+"; } else { signoz = ""; }
+                if (float.Parse(a) >= 0) { signoa = "+"; } else { signoa = ""; }
 
-                x = string.Format("{0:00000.0000}", float.Parse(x, CultureInfo.InvariantCulture.NumberFormat));
-                y = string.Format("{0:00000.0000}", float.Parse(y, CultureInfo.InvariantCulture.NumberFormat));
-                z = string.Format("{0:00000.0000}", float.Parse(z, CultureInfo.InvariantCulture.NumberFormat));
-                a = string.Format("{0:00000.0000}", float.Parse(a, CultureInfo.InvariantCulture.NumberFormat));
+                //float.Parse(x, CultureInfo.InvariantCulture.NumberFormat)
+                x = string.Format("{0:00000.0000}", float.Parse(x));
+                y = string.Format("{0:00000.0000}", float.Parse(y));
+                z = string.Format("{0:00000.0000}", float.Parse(z));
+                a = string.Format("{0:00000.0000}", float.Parse(a));
                 numero_linea_actual= string.Format("{0:0000}", int.Parse(numero_linea_actual));
 
 
                 M51 = "N51E"+ signox+ x +"x"+ signoy + y + "y"+ signoz + z + "z"+ signoa + a + "aF";
+                M51.Replace(",", ".");
+
                 //String M01 = "N01E+00000.0000x+00000.0000y+00000.0000z+00000.0000aF";
                 //label2.Text = numero_linea_actual + " * " + elapsed_time + " * " + estimated_time;
                 M52 = "N52EL"+ elapsed_time + "ES"+ estimated_time + "NL0000LA"+ numero_linea_actual + "***********************F";
@@ -354,9 +360,9 @@ namespace COMPLETE_FLAT_UI
             UpdateDro();
             try
             {
-                if (clientSocket != null)
+                if (client != null)
                 {
-                    if (clientSocket.Connected == false)
+                    if (client.Connected == false)
                     {
                         tcp_conected = false;
                     }
@@ -374,6 +380,7 @@ namespace COMPLETE_FLAT_UI
             catch (Exception)
             {
             }
+            /*
             if (tcp_conected==true)
             {
                 button2.Text = "  MPG Conectado";
@@ -384,6 +391,7 @@ namespace COMPLETE_FLAT_UI
                 button2.Text = "  MPG Desconectado";
                 button2.ForeColor = Color.Red;
             }
+            */
         }
 
         //Server tcp/ip
@@ -391,12 +399,11 @@ namespace COMPLETE_FLAT_UI
         {
             try
             {
-                if (clientSocket.Connected == true)
+                if (client.Connected == true)
                 {
                     tcp_conected = false;
                     Conexion_tcp_automatica.Enabled = true;
-                    //clientSocket.Disconnect(true);
-                    clientSocket.Close();
+                    client.Close();
                 }
             }
             catch (SocketException ex)
@@ -419,31 +426,22 @@ namespace COMPLETE_FLAT_UI
             enviar_info = Encoding.Default.GetBytes(mensaje);
             try
             {
-                if (tcp_conected == true)
-                {
-                    if (clientSocket != null)
-                    {
-                        if (msg_tcp_enviando == 0)
-                        {
-                            msg_tcp_enviando = 1;
-                            clientSocket.BeginSend(enviar_info, 0, enviar_info.Length, SocketFlags.None, SendCallback, null);
-                        }
-                        
-                    }
-
-                }
+               if (tcp_conected == true)
+               {
+                stream.Write(enviar_info, 0, enviar_info.Length);
+               }
             }
             catch (SocketException ex)
             {
-
+                tcp_conected = false;
             }
             catch (ObjectDisposedException ex)
             {
-
+                tcp_conected = false;
             }
             catch (Exception)
             {
-
+                tcp_conected = false;
             }
         }
         private static void ShowErrorDialog(string message)
@@ -488,32 +486,41 @@ namespace COMPLETE_FLAT_UI
             }
         }
 
-        private void ReceiveCallback(IAsyncResult AR)
+        void OnReceiveData(IAsyncResult result)
         {
             try
             {
-                int received = clientSocket.EndReceive(AR);
+                // Obtener los datos del resultado de la operación de lectura asíncrona
+                object[] state = (object[])result.AsyncState;
+                NetworkStream stream = (NetworkStream)state[0];
+                byte[] buffer = (byte[])state[1];
+                int bytes = stream.EndRead(result);
 
-                string message = Encoding.ASCII.GetString(buffer);
+                // Procesar los datos recibidos
+                String message = System.Text.Encoding.ASCII.GetString(buffer, 0, bytes);
 
-                char[] chars = message.ToCharArray();
-                if (message.Length == 53)
+                String recortado = message.Substring(0, 53);
+                char[] chars = recortado.ToCharArray();
+                label6.Text = recortado.Length.ToString();
+                textBox1.Text= recortado;
+                if (recortado.Length == 53)
                 {
-                    if (chars[0] == 'N' && chars[52] == 'F')                             //Si el mensaje es correcto
+                    if (chars[0] == 'N' && chars[52] == 'F')                            //Si el mensaje es correcto
                     {                                                                  //N01S0.0001X+1000************************************F
-                        if (message == "N0451*********************************************51F") { enviar_tcp(M51); }
-                        if (message == "N0452*********************************************52F") { enviar_tcp(M52); }
-                        if (message == "N02Zero*****************************************ZeroF") { mach3_send_OEMDRO(1007); } //Zero all
-                        if (message == "N02ZeroX***************************************ZeroXF") { mach3_send_OEMDRO(1008); } //Zero x
-                        if (message == "N02ZeroY***************************************ZeroYF") { mach3_send_OEMDRO(1009); } //Zero y
-                        if (message == "N02ZeroZ***************************************ZeroZF") { mach3_send_OEMDRO(1010); } //Zero z
-                        if (message == "N02ZeroA***************************************ZeroAF") { mach3_send_OEMDRO(1011); } //Zero a
-                        if (message == "N02Reset***************************************ResetF") { mach3_send_OEMDRO(1021); } //Reset
-                        if (message == "N02Stop*****************************************StopF") { mach3_send_OEMDRO(1003); } //Stop
-                        if (message == "N02Rewind*************************************RewindF") { mach3_send_OEMDRO(1002); } //Rewind
-                        if (message == "N02Start***************************************StartF") { mach3_send_OEMDRO(1000); } //Cycle start
-                        if (message == "N02Pause***************************************PauseF") { mach3_send_OEMDRO(1001); } //Pause (Feed Hold)
-                        if (message == "N02GOTOZ***************************************GOTOZF") { mach3_send_OEMDRO(1017); } //Goto zero
+                        watchdog_socker = 0;
+                        if (recortado == "N0451*********************************************51F") { enviar_tcp(M51.Replace(",", ".")); }
+                        if (recortado == "N0452*********************************************52F") { enviar_tcp(M52); }
+                        if (recortado == "N02Zero*****************************************ZeroF") { mach3_send_OEMDRO(1007); } //Zero all
+                        if (recortado == "N02ZeroX***************************************ZeroXF") { mach3_send_OEMDRO(1008); } //Zero x
+                        if (recortado == "N02ZeroY***************************************ZeroYF") { mach3_send_OEMDRO(1009); } //Zero y
+                        if (recortado == "N02ZeroZ***************************************ZeroZF") { mach3_send_OEMDRO(1010); } //Zero z
+                        if (recortado == "N02ZeroA***************************************ZeroAF") { mach3_send_OEMDRO(1011); } //Zero a
+                        if (recortado == "N02Reset***************************************ResetF") { mach3_send_OEMDRO(1021); } //Reset
+                        if (recortado == "N02Stop*****************************************StopF") { mach3_send_OEMDRO(1003); } //Stop
+                        if (recortado == "N02Rewind*************************************RewindF") { mach3_send_OEMDRO(1002); } //Rewind
+                        if (recortado == "N02Start***************************************StartF") { mach3_send_OEMDRO(1000); } //Cycle start
+                        if (recortado == "N02Pause***************************************PauseF") { mach3_send_OEMDRO(1001); } //Pause (Feed Hold)
+                        if (recortado == "N02GOTOZ***************************************GOTOZF") { mach3_send_OEMDRO(1017); } //Goto zero
 
                         if (chars[1] == '0' && chars[2] == '1' && chars[3] == 'S')    //Mensaje de movimiento de eje
                         {
@@ -609,7 +616,7 @@ namespace COMPLETE_FLAT_UI
                             }
                             catch (Exception)
                             {
-
+                                tcp_conected = false;
                             }
 
                         }
@@ -617,6 +624,7 @@ namespace COMPLETE_FLAT_UI
                     }
                     else
                     {
+                        label6.Text = chars[52].ToString();
                         //label2.Text = "error";
                     }
                 }
@@ -629,57 +637,69 @@ namespace COMPLETE_FLAT_UI
                 //_mInst.LoadFile("C:/Users/fabia/OneDrive/Desktop/gcode.gcode");
                 // SetDRO(801, 20.1);
 
+                // Comenzar a leer datos de la red de forma asíncrona nuevamente
+                stream.BeginRead(buffer, 0, buffer.Length, OnReceiveData, new object[] { stream, buffer });
 
-                // Comienzo a recibir datos nuevamente.
-                clientSocket.BeginReceive(buffer, 0, 53, SocketFlags.None, ReceiveCallback, null);
             }
             catch (SocketException ex)
             {
-                desconectar();
+                // desconectar();
+                tcp_conected = false;
             }
             catch (ObjectDisposedException ex)
             {
-
+                //desconectar();
+                tcp_conected = false;
             }
             catch (Exception)
             {
-
+               // desconectar();
             }
 
         }
 
+
+        
         void Conexion_tcp_automatica_Tick(object sender, EventArgs e)
         {
             if (tcp_conected == false)
             {
                 try
                 {
+                    var endPoint2 = new IPEndPoint(IPAddress.Parse(ip), puerto_server1);
+                    // Establecer la dirección IP y el número de puerto del servidor
+                    string ipp = ip; // Dirección IP local
+                    int port = puerto_server1; // Puerto utilizado por el servidor
 
-                    clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    // Crear un objeto TcpClient y conectarse al servidor
+                    client = new TcpClient(ipp, port);
 
-                    // Connect to the specified host.
-                    if (clientSocket.Connected == false)
-                    {
-                        var endPoint = new IPEndPoint(IPAddress.Parse(ip), puerto_server1);
-                        clientSocket.BeginConnect(endPoint, new AsyncCallback(ConnectCallback), null);
-                        tcp_conected = true;
-                        byte[] enviar_info = new byte[100];
-                        enviar_info = Encoding.Default.GetBytes("N04Conected*****************************************F");
-                        clientSocket.BeginSend(enviar_info, 0, enviar_info.Length, SocketFlags.None, SendCallback, null);
-                        //Conexion_tcp_automatica.Enabled = false;
-                    }
+                    // Obtener una referencia al flujo de datos de la red
+                    stream = client.GetStream();
+
+                    // Comenzar a leer datos de la red de forma asíncrona
+                    byte[] buffer = new byte[1024];
+                    stream.BeginRead(buffer, 0, buffer.Length, OnReceiveData, new object[] { stream, buffer
+                    });
+
+                    // Enviar datos al servidor
+                    byte[] enviar_info = new byte[100];
+                    enviar_info = Encoding.Default.GetBytes("N04Conected*****************************************F");
+                    stream.Write(enviar_info, 0, enviar_info.Length);
+                    tcp_conected = true;
+
                 }
                 catch (SocketException ex)
                 {
-
+                    tcp_conected = false;
                 }
                 catch (ObjectDisposedException ex)
                 {
-
+                    tcp_conected = false;
                 }
                 catch (Exception)
                 {
-
+                    tcp_conected = false;
                 }
             }
         }
@@ -699,6 +719,23 @@ namespace COMPLETE_FLAT_UI
             enviar_tcp("N05Vivo0000000**************************************F");
         }
 
+        private void Timer_WD_socker_Tick(object sender, EventArgs e)
+        {
+            if (watchdog_socker>5)
+            {
+                button2.Text = "  MPG Desconectado";
+                button2.ForeColor = Color.Red;
+            }
+            else
+            {
+                watchdog_socker++;
+                button2.Text = "  MPG Conectado";
+                button2.ForeColor = Color.Green;
+            }
+
+           
+        }
+
         private void pictureBox7_Click(object sender, EventArgs e)
         {
             
@@ -708,48 +745,6 @@ namespace COMPLETE_FLAT_UI
         {
         }
 
-        private void ConnectCallback(IAsyncResult AR)
-        {
-            try
-            {
-                //clientSocket = (Socket)AR.AsyncState;
-                clientSocket.EndConnect(AR);
-                buffer = new byte[clientSocket.ReceiveBufferSize];
-                clientSocket.BeginReceive(buffer, 0, 53, SocketFlags.None, ReceiveCallback, null);
-
-            }
-            catch (SocketException ex)
-            {
-                desconectar();
-            }
-            catch (ObjectDisposedException ex)
-            {
-
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        private void SendCallback(IAsyncResult AR)
-        {
-            try
-            {
-                clientSocket.EndSend(AR);
-                
-            }
-            catch (SocketException ex)
-            {
-                desconectar();
-            }
-            catch (ObjectDisposedException ex)
-            {
-            }
-            catch (Exception)
-            {
-            }
-            msg_tcp_enviando = 0;
-        }
 
     }
 }

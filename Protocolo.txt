@@ -33,9 +33,9 @@ Desde aplicacion a esp:
 N  nuevo mensaje
 00 tipo de mensaje
    50	Configuracion parametro
-   51	Informacion ejes   				N01E+00000.0000x+00000.0000y+00000.0000z+00000.0000aF
+   51	Informacion ejes   				N51E+00000.0000x+00000.0000y+00000.0000z+00000.0000aF
   
-   52   Informacion del proceso			N02EL00:00ES00:00NL0000LA0000***********************F
+   52   Informacion del proceso			N52EL00:00ES00:00NL0000LA0000***********************F
    
 										EL00:00 = Elapsed time
 										ES00:00 = Estimative time
