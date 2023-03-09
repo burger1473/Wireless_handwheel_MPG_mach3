@@ -42,10 +42,15 @@
                                     //Luego de detecar el wifi y poder conectarse, funciona en wifi estacion
 #include "../include/LCD.h"
 #include "../include/ControlMPG.h"
-
+#include "../include/Defines.h"
 
 
 void app_main() {
+    //ets_delay_us(500000);  //Delay 500ms por si no funciona apagado
+    gpio_pad_select_gpio(Pin_apagado);
+    gpio_set_direction(Pin_apagado, GPIO_MODE_OUTPUT);
+    gpio_set_level(Pin_apagado, 1);
+
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
     rtc_wdt_protect_off();
     rtc_wdt_disable();
@@ -56,7 +61,14 @@ void app_main() {
     LCDGotoXY(5, 2);
     LCD_print("Bienvenido");
 
-    ets_delay_us(5000000);
+    vTaskDelay(3000/portTICK_PERIOD_MS);
+    /*
+    for(uint8_t i=0; i<200; i++){
+        ets_delay_us(25000);
+        esp_task_wdt_reset();
+    }
+    */
+
     iniciarWifi();        //Inicio WIFI en modo dual
     //iniciarWifi()  crea una tarea que maneja todo el periferico wifi.
     //Cuando se puede conectar a la red AP o cuando crea su poropio wifi (sta)

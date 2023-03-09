@@ -22,6 +22,7 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include <esp_log.h>
+#include "Defines.h"
 
 /*==================[Prototipos de funciones]======================*/
 void ControlMPG_init(void);

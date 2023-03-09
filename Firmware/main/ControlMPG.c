@@ -22,12 +22,11 @@ static void ControlMPG(void *pvParameters);
 static char tag3[] = "Control_debug";
 
 /*===================================================[Definiciones]===============================================*/
-#define MUX_pin_1 GPIO_NUM_15
-#define MUX_pin_2 GPIO_NUM_2
-#define MUX_pin_3 GPIO_NUM_4
+
 
 /*===================================================[Variables]===============================================*/
 TaskHandle_t TaskHandle_1 = NULL;
+char buffer[54];                   //Sirve para enviar datos por TCP/IP
 
 /*===================================================[Implementaciones]===============================================*/
 
@@ -42,7 +41,10 @@ void Set_cero(void){
         LCD_print("Pres x para salir");
         uint8_t caracter=uart_ReadChar();
         if(caracter=='x'){break;}           //Tecla para salir del menu
-        vTaskDelay(300/portTICK_PERIOD_MS);
+        if(caracter=='z'){break;}           //Entrada opto
+        strcpy(buffer, "N01S0.0001X+0100************************************F");
+        ServerTCP_sendData(buffer, 53);     //Aumento un paso en match3
+        vTaskDelay(200/portTICK_PERIOD_MS);
     }
 
     while(true){
@@ -56,6 +58,8 @@ void Set_cero(void){
         uint8_t caracter=uart_ReadChar();
         if(caracter=='x'){break;}           //Tecla para salir del menu
         if(caracter=='s'){  
+            strcpy(buffer, "N01S0.0001X+1000************************************F");
+            ServerTCP_sendData(buffer, 53);     //Aumento un paso en match3
             break;                          //Tecla para salir del menu
         }           
         vTaskDelay(300/portTICK_PERIOD_MS);
@@ -91,65 +95,74 @@ void Cargar_gcode(void){
                 LCD_print("Pres x para salir");
                 uint8_t cant_lines=SD_contar_lineas_archivo(nombree);
                 if(cant_lines == 0){
+                    LCDGotoXY(0, 1);
+                    LCD_print("No hay archivos");
+                    vTaskDelay(2000/portTICK_PERIOD_MS);
                     goto end;
                 }else{
-                    char result[32];
-                    char Text_enviar[54];
-                    memset(Text_enviar, '*', sizeof(Text_enviar));
+                    //char result[32];
+                    memset(buffer, '*', sizeof(buffer));
                     char contenido_linea[1024];
                     char num_final[11];
                     sprintf(num_final, "%04d", cant_lines);
-                    Text_enviar[48]=num_final[0];  Text_enviar[49]=num_final[1];   Text_enviar[50]=num_final[2]; Text_enviar[51]=num_final[3];
-                    
+                    buffer[48]=num_final[0];  buffer[49]=num_final[1];   buffer[50]=num_final[2]; buffer[51]=num_final[3];
+                    buffer[0]='N';  buffer[1]='0';  buffer[2]='3'; buffer[7]='C'; buffer[46]='N'; buffer[47]='f'; buffer[52]='F';  
+                        
                     for(uint8_t j=1; j<cant_lines+1; j++){
                         uint8_t caracter=uart_ReadChar();
                         if(caracter=='x'){goto end;}           //Tecla para salir del menu
                         LCDGotoXY(0, 2);
-                        sprintf(result, "Linea %d de %d", j, cant_lines);
-                        LCD_print(result);
+                        //sprintf(result, "Linea %d de %d", j, cant_lines);
+                        //LCD_print(result);
                         memset(contenido_linea, 0, sizeof(contenido_linea));
                         SD_obtener_linea(contenido_linea, nombree, j);
                         
-                        Text_enviar[0]='N';  Text_enviar[1]='0';  Text_enviar[2]='3'; Text_enviar[7]='C'; Text_enviar[46]='N'; Text_enviar[47]='f'; Text_enviar[52]='F';  
                         char num_actual[11];
                         sprintf(num_actual, "%04d", j);
-                        Text_enviar[3]=num_actual[0];  Text_enviar[4]=num_actual[1];  Text_enviar[5]=num_actual[2]; Text_enviar[6]=num_actual[3];
+                        buffer[3]=num_actual[0];  buffer[4]=num_actual[1];  buffer[5]=num_actual[2]; buffer[6]=num_actual[3];
                         
                         //Borro el caracter salto de linea
-                        uint8_t N_caracteres=strlen(contenido_linea);
-                        for(uint8_t i=0; i<N_caracteres; i++){
-                            if(contenido_linea[i] == '\n'){
-                                contenido_linea[i] = '\0';
+                        uint8_t q = 0;
+                        while(contenido_linea[q] != '\0') {
+                            if(contenido_linea[q] == '\n') {
+                                contenido_linea[q] = '\0';
+                                break;
                             }
+                            q++;
                         }
+
+                        uint8_t N_caracteres=strlen(contenido_linea);
                         
                                                 
                         if(N_caracteres>38){               //Si es mayor, parto el mensaje en 2
-                            Text_enviar[46]='A';
+                            buffer[46]='A';
                             for(uint8_t h=0; h<38; h++){
-                                Text_enviar[8+h]=contenido_linea[h];
+                                buffer[8+h]=contenido_linea[h];
                             }
-                            ESP_LOGW(tag3, "%s", Text_enviar); 
-                            Text_enviar[46]='F';
+                            ServerTCP_sendData(buffer, 53);
+                            ESP_LOGW(tag3, "%s", buffer); 
+                            vTaskDelay(15/portTICK_PERIOD_MS);
+                            buffer[46]='F';
                             for(uint8_t p=0; p<38; p++){
-                                if(p<N_caracteres-37){ Text_enviar[8+p]=contenido_linea[p+38];}
-                                if(p>=N_caracteres-37){ Text_enviar[8+p]='*';}
+                                if(p+38<N_caracteres){  buffer[8+p]=contenido_linea[p+38];}
+                                if(p+38>=N_caracteres){ buffer[8+p]='*';}
                             }
-                            
-                            ESP_LOGW(tag3, "%s", Text_enviar); 
+                            ServerTCP_sendData(buffer, 53);
+                            ESP_LOGW(tag3, "%s", buffer); 
                         }else{                  //Si esta dentro del protocolo, mando directo
+                            buffer[46]='N';
                             for(uint8_t p=0; p<38; p++){
-                                if(p<N_caracteres){ Text_enviar[8+p]=contenido_linea[p];}
-                                if(p>=N_caracteres){ Text_enviar[8+p]='*';}
+                                if(p<N_caracteres){ buffer[8+p]=contenido_linea[p];}
+                                if(p>=N_caracteres){ buffer[8+p]='*';}
                             }
-                            
-                            ESP_LOGW(tag3, "%s", Text_enviar); 
+                            ServerTCP_sendData(buffer, 53);
+                            ESP_LOGW(tag3, "%s", buffer); 
                         }   
-                        vTaskDelay(10/portTICK_PERIOD_MS);
+                        vTaskDelay(15/portTICK_PERIOD_MS);
                     }
                     printf("FIN");
                     LCDGotoXY(0, 2);
-                    LCD_print("Esperando confirmacion");
+                    LCD_print("Verificando...");
                     uint8_t timeout=0;
                     while(true){
                         timeout++;
@@ -173,7 +186,7 @@ void Cargar_gcode(void){
 }
 
 void Apagar(void){
-
+    gpio_set_level(Pin_apagado, 0);
 }
 
 void menu(void){
@@ -233,7 +246,7 @@ void Obtener_teclado(void){
     if(gpio_get_level(MUX_pin_2)==1){valor=valor|0b010;} //DEC =2
     if(gpio_get_level(MUX_pin_3)==1){valor=valor|0b100;} //DEC =4
 
-    char buffer[54];
+    
 
     switch (valor) {
         case 0:

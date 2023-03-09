@@ -11,13 +11,14 @@
  #ifndef LCD_H_
  #define LCD_H_
 
+#ifndef LCD_PIN_DEFINE
  #define LCD_pin_RS  GPIO_NUM_14
  #define LCD_pin_E   GPIO_NUM_27
  #define LCD_pin_D4  GPIO_NUM_25
  #define LCD_pin_D5  GPIO_NUM_33
  #define LCD_pin_D6  GPIO_NUM_32
  #define LCD_pin_D7  GPIO_NUM_26
-
+#endif
  // cursor position to DDRAM mapping
  #define LCD_LINE0_DDRAMADDR		0x00
  #define LCD_LINE1_DDRAMADDR		0x40
@@ -44,6 +45,7 @@
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "Defines.h"
 
 /*==================[Prototipos de funciones]======================*/
 void LCD_init(void);

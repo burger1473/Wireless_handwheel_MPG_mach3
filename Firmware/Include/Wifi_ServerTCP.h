@@ -39,9 +39,12 @@
 #include "esp_netif.h"
 #include "lwip/err.h"
 #include "lwip/sys.h"
+#include "Defines.h"
 
 //=========================== Definiciones ================================
-#define mDNShostName "MPG000001"
+#ifndef mDNS_DEFINE
+ #define mDNShostName "MPG000001"
+#endif
 
 /*==================[Prototipos de funciones]======================*/
 void ServerTCP_configwifi(void);

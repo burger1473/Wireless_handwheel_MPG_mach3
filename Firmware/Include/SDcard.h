@@ -37,11 +37,16 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include <stdlib.h>
+#include "Defines.h"
 
+
+#ifndef SD_PIN_DEFINE
 #define PIN_NUM_MISO  GPIO_NUM_19
 #define PIN_NUM_MOSI  GPIO_NUM_23
 #define PIN_NUM_CLK   GPIO_NUM_18
 #define PIN_NUM_CS    GPIO_NUM_5
+#endif
+
 // Ruta de montaje del sistema de archivos
 #define EXAMPLE_MAX_CHAR_SIZE    64
 #define MOUNT_POINT "/sdcard"
