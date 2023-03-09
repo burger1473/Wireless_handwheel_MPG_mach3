@@ -14,6 +14,8 @@
 #include "../include/LCD.h"
 #include "../include/Wifi_ServerTCP.h"
 #include "../include/SDcard.h"
+#include "../include/Uart.h"
+
 
 /*===================================================[Prototipos de funciones]===============================================*/
 static void ControlMPG(void *pvParameters);
@@ -29,6 +31,183 @@ TaskHandle_t TaskHandle_1 = NULL;
 
 /*===================================================[Implementaciones]===============================================*/
 
+void Set_cero(void){
+    while (true){
+        LCDclr();
+        LCDGotoXY(0, 0);
+        LCD_print("Set Y to cero");
+        LCDGotoXY(0, 1);
+        LCD_print("...");
+        LCDGotoXY(0, 3);
+        LCD_print("Pres x para salir");
+        uint8_t caracter=uart_ReadChar();
+        if(caracter=='x'){break;}           //Tecla para salir del menu
+        vTaskDelay(300/portTICK_PERIOD_MS);
+    }
+
+    while(true){
+        LCDclr();
+        LCDGotoXY(0, 0);
+        LCD_print("Bajar el espesor?");
+        LCDGotoXY(0, 2);
+        LCD_print("S para si");
+        LCDGotoXY(0, 3);
+        LCD_print("x para no");
+        uint8_t caracter=uart_ReadChar();
+        if(caracter=='x'){break;}           //Tecla para salir del menu
+        if(caracter=='s'){  
+            break;                          //Tecla para salir del menu
+        }           
+        vTaskDelay(300/portTICK_PERIOD_MS);
+    }
+
+}
+
+
+void Cargar_gcode(void){
+    while(true){
+        LCDclr();
+        LCDGotoXY(0, 0);
+        LCD_print("Seleccione archivo:");
+        LCDGotoXY(19, 1);
+        LCD_print(">");
+        LCDGotoXY(0, 3);
+        LCD_print("Pres x para salir  <");
+        
+        uint8_t caracter=uart_ReadChar();
+        if(caracter=='x'){break;}           //Tecla para salir del menu
+
+        char nombree[512];
+        if(caracter=='<'){memset(nombree, 0, sizeof(nombree)); SD_buscar_enlist(nombree, false);} //Busca archivo anterior
+        if(caracter=='>'){memset(nombree, 0, sizeof(nombree)); SD_buscar_enlist(nombree, true); } //Busca archivo siguiente
+        LCDGotoXY(0, 2);
+        LCD_print(nombree);
+
+        if(caracter=='o'){
+            while(true){
+                LCDGotoXY(0, 0);
+                LCD_print("   Cargando Gcode");
+                LCDGotoXY(0, 3);
+                LCD_print("Pres x para salir");
+                uint8_t cant_lines=SD_contar_lineas_archivo(nombree);
+                if(cant_lines == 0){
+                    goto end;
+                }else{
+                    char result[32];
+                    char Text_enviar[54];
+                    memset(Text_enviar, '*', sizeof(Text_enviar));
+                    char contenido_linea[1024];
+                    char num_final[11];
+                    sprintf(num_final, "%04d", cant_lines);
+                    Text_enviar[48]=num_final[0];  Text_enviar[49]=num_final[1];   Text_enviar[50]=num_final[2]; Text_enviar[51]=num_final[3];
+                    
+                    for(uint8_t j=1; j<cant_lines+1; j++){
+                        uint8_t caracter=uart_ReadChar();
+                        if(caracter=='x'){goto end;}           //Tecla para salir del menu
+                        LCDGotoXY(0, 2);
+                        sprintf(result, "Linea %d de %d", j, cant_lines);
+                        LCD_print(result);
+                        memset(contenido_linea, 0, sizeof(contenido_linea));
+                        SD_obtener_linea(contenido_linea, nombree, j);
+                        
+                        Text_enviar[0]='N';  Text_enviar[1]='0';  Text_enviar[2]='3'; Text_enviar[7]='C'; Text_enviar[46]='N'; Text_enviar[47]='f'; Text_enviar[52]='F';  
+                        char num_actual[11];
+                        sprintf(num_actual, "%04d", j);
+                        Text_enviar[3]=num_actual[0];  Text_enviar[4]=num_actual[1];  Text_enviar[5]=num_actual[2]; Text_enviar[6]=num_actual[3];
+                        
+                        //Borro el caracter salto de linea
+                        uint8_t N_caracteres=strlen(contenido_linea);
+                        for(uint8_t i=0; i<N_caracteres; i++){
+                            if(contenido_linea[i] == '\n'){
+                                contenido_linea[i] = '\0';
+                            }
+                        }
+                        
+                                                
+                        if(N_caracteres>38){               //Si es mayor, parto el mensaje en 2
+                            Text_enviar[46]='A';
+                            for(uint8_t h=0; h<38; h++){
+                                Text_enviar[8+h]=contenido_linea[h];
+                            }
+                            ESP_LOGW(tag3, "%s", Text_enviar); 
+                            Text_enviar[46]='F';
+                            for(uint8_t p=0; p<38; p++){
+                                if(p<N_caracteres-37){ Text_enviar[8+p]=contenido_linea[p+38];}
+                                if(p>=N_caracteres-37){ Text_enviar[8+p]='*';}
+                            }
+                            
+                            ESP_LOGW(tag3, "%s", Text_enviar); 
+                        }else{                  //Si esta dentro del protocolo, mando directo
+                            for(uint8_t p=0; p<38; p++){
+                                if(p<N_caracteres){ Text_enviar[8+p]=contenido_linea[p];}
+                                if(p>=N_caracteres){ Text_enviar[8+p]='*';}
+                            }
+                            
+                            ESP_LOGW(tag3, "%s", Text_enviar); 
+                        }   
+                        vTaskDelay(10/portTICK_PERIOD_MS);
+                    }
+                    printf("FIN");
+                    LCDGotoXY(0, 2);
+                    LCD_print("Esperando confirmacion");
+                    uint8_t timeout=0;
+                    while(true){
+                        timeout++;
+                        vTaskDelay(100/portTICK_PERIOD_MS);
+                        if(timeout>4){
+                            LCDGotoXY(0, 2);
+                            LCD_print("Error al pasar gcode");
+                            vTaskDelay(1000/portTICK_PERIOD_MS);
+                            goto end;
+                        }
+                    }
+                }
+                
+            }
+            end:
+            break; 
+        }           //Tecla para salir del menu
+
+        vTaskDelay(300/portTICK_PERIOD_MS);
+    }
+}
+
+void Apagar(void){
+
+}
+
+void menu(void){
+    uint8_t i=1;
+    while(true){
+        uint8_t caracter=uart_ReadChar();
+        if(caracter=='x'){break;}           //Tecla para salir del menu
+        if(caracter=='<'){i--;}
+        if(caracter=='>'){i++;}
+        if(i<1){i=5;}  if(i>5){i=1;}
+        LCDclr();
+        LCDGotoXY(8, 0);
+        LCD_print("Menu");
+        LCDGotoXY(19, 1);
+        LCD_print(">");
+        LCDGotoXY(19, 3);
+        LCD_print("<");
+        LCDGotoXY(0, 2);
+        if(i==1){LCD_print("Set cero");}
+        if(i==2){LCD_print("Cargar gcode");}
+        if(i==3){LCD_print("Name: "); LCD_print(mDNShostName);}
+        if(i==4){LCD_print("Apagar dispositivo");}
+        if(i==5){LCD_print("Volver");}
+        
+        if(caracter=='o'){
+            if(i==1){Set_cero();}
+            if(i==2){Cargar_gcode();}
+            if(i==4){Apagar();}
+            if(i==5){break;}
+        }
+        vTaskDelay(300/portTICK_PERIOD_MS) ;
+    }
+}
+
 void Teclado_init(void){
     //Configuro entradas
     gpio_pad_select_gpio(MUX_pin_1);
@@ -42,6 +221,13 @@ void Teclado_init(void){
 }
 
 void Obtener_teclado(void){
+
+    uint8_t caracter=uart_ReadChar();
+
+    if(caracter=='o'){
+        menu();
+    }
+
     uint8_t valor=0;
     if(gpio_get_level(MUX_pin_1)==1){valor=valor|0b001;} //DEC =1
     if(gpio_get_level(MUX_pin_2)==1){valor=valor|0b010;} //DEC =2
@@ -86,36 +272,24 @@ void Obtener_teclado(void){
     }
 }
 
-void ControlMPG_init(void){
 
+void ControlMPG_init(void){
     esp_err_t ret = xTaskCreate(&ControlMPG, "ControlMPG", 5072, NULL, 2, &TaskHandle_1); //Creo tarea
     if (ret != pdPASS)  {
         ESP_LOGE(tag3, "Error al crear tarea ControlMPG. Reiniciando ESP"); 
         esp_restart();
     }
+
     Teclado_init();
     SD_init();
-
-    char nombree[256];
-    memset(nombree, 0, sizeof(nombree));
-    SD_buscar_enlist(nombree, true);       //Busca archivo siguiente
-    ESP_LOGI(TAGGG, "File %s", nombree);
-    SD_buscar_enlist(nombree, false);
-    ESP_LOGI(TAGGG, "File %s", nombree);   //Busca archivo anterior
-    if(false==true){                       //Pulsador enter
-        /*
-        char buffer[54];
-        strcpy(buffer, "N0451*********************************************51F");
-        if(ServerTCP_sendData(buffer, 53)==true){}
-        */
-    }                  
-
+    uart_init();
 }
 
 static void ControlMPG(void *pvParameters) {
     if(ServerTCP_socket_init(1)==false){ESP_LOGE(tag3, "Error al iniciar socket. Reiniciando ESP"); esp_restart();}
     
     while (1) {
+        
         bool conectado=false;
         char buffer[54];
         strcpy(buffer, "N0451*********************************************51F");

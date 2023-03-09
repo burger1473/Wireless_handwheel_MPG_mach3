@@ -83,6 +83,47 @@ bool SD_cerrar_archivo(void){
     return false;
 }
 
+uint8_t SD_contar_lineas_archivo(char *nombre){
+    char result[100];
+    sprintf(result, "%s/%s", MOUNT_POINT, nombre);
+    FILE* f = fopen(result, "r");
+    if (f == NULL) {
+        printf("Error opening file\n");
+        return 0;
+    }
+    char buffer[1024];
+    int line_number = 1;
+    while (fgets(buffer, sizeof(buffer), f)) {
+        //printf("Line %d: %s", line_number, buffer);
+        line_number++;
+    }
+    fclose(f);
+    return (line_number-1);
+}
+
+bool SD_obtener_linea(char *texto, char *nombre_archivo, uint8_t linea){
+    char result[100];
+    sprintf(result, "%s/%s", MOUNT_POINT, nombre_archivo);
+    FILE* f = fopen(result, "r");
+    if (f == NULL) {
+        printf("Error opening file\n");
+        return false;
+    }
+    char buffer[1024];
+    memset(buffer, 0, sizeof(buffer));
+    int line_number = 1;
+    while (fgets(buffer, sizeof(buffer), f)) {
+        //printf("Line %d: %s", line_number, buffer);
+        if(line_number==linea){
+            break;
+        }else{
+            line_number++;
+        }
+    }
+    strcpy(texto, buffer);
+    fclose(f);
+    return true;
+}
 
 bool SD_buscar_enlist(char *nombre, bool siguiente){
     if(montado==true){

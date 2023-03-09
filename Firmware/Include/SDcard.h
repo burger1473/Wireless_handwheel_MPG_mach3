@@ -52,6 +52,8 @@ void SD_abrir_archivo(void);
 bool SD_buscar_enlist(char *nombre, bool siguiente);
 bool SD_cerrar_archivo(void);
 void SD_init(void);
+uint8_t SD_contar_lineas_archivo(char *nombre);
+bool SD_obtener_linea(char *texto, char *nombre_archivo, uint8_t linea);
 
 //=========================== Variables ================================
 
