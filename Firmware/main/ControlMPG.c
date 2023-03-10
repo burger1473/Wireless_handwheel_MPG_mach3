@@ -34,7 +34,6 @@ uint8_t pasos_encoder=0;
 float pasos=0.0001;  //Para indicar x1 x0.1 x0.01 x0.001 x0.0001
 char eje='X';
 char signo='+';
-char incremento=1;
 
 /*===================================================[Implementaciones]===============================================*/
 
@@ -73,8 +72,8 @@ void Set_cero(void){
         LCDGotoXY(0, 3);
         LCD_print("Pres x para salir");
         uint8_t caracter=uart_ReadChar();
-        if(caracter=='x'){break;}           //Tecla para salir del menu
-        if(caracter=='z'){break;}           //Entrada opto
+        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Tecla para salir del menu
+        if(caracter=='z' || gpio_get_level(PIN_opto)==0){break;}           //Entrada opto
         strcpy(buffer, "N01S0.0001X+0100************************************F");
         ServerTCP_sendData(buffer, 53);     //Aumento un paso en match3
         vTaskDelay(200/portTICK_PERIOD_MS);
@@ -85,12 +84,12 @@ void Set_cero(void){
         LCDGotoXY(0, 0);
         LCD_print("Bajar el espesor?");
         LCDGotoXY(0, 2);
-        LCD_print("S para si");
+        LCD_print("Pres ENTER para si");
         LCDGotoXY(0, 3);
-        LCD_print("x para no");
+        LCD_print("Pres STOP para no");
         uint8_t caracter=uart_ReadChar();
-        if(caracter=='x'){break;}           //Tecla para salir del menu
-        if(caracter=='s'){  
+        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Tecla para salir del menu
+        if(caracter=='s' || gpio_get_level(Tecla_encendido)==0){  
             strcpy(buffer, "N01S0.0001X+1000************************************F");
             ServerTCP_sendData(buffer, 53);     //Aumento un paso en match3
             break;                          //Tecla para salir del menu
@@ -109,23 +108,23 @@ void Cargar_gcode(void){
         LCDGotoXY(19, 1);
         LCD_print(">");
         LCDGotoXY(0, 3);
-        LCD_print("Pres x para salir  <");
+        LCD_print("STOP para salir    <");
         
         uint8_t caracter=uart_ReadChar();
-        if(caracter=='x'){break;}           //Tecla para salir del menu
+        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Tecla para salir del menu
 
         char nombree[512];
-        if(caracter=='<'){memset(nombree, 0, sizeof(nombree)); SD_buscar_enlist(nombree, false);} //Busca archivo anterior
-        if(caracter=='>'){memset(nombree, 0, sizeof(nombree)); SD_buscar_enlist(nombree, true); } //Busca archivo siguiente
+        if(caracter=='<' || gpio_get_level(Tecla_baja)==0){memset(nombree, 0, sizeof(nombree)); SD_buscar_enlist(nombree, false);} //Busca archivo anterior
+        if(caracter=='>' || gpio_get_level(Tecla_sube)==0){memset(nombree, 0, sizeof(nombree)); SD_buscar_enlist(nombree, true); } //Busca archivo siguiente
         LCDGotoXY(0, 2);
         LCD_print(nombree);
     
-        if(caracter=='o'){
+        if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){
             while(true){
                 LCDGotoXY(0, 0);
                 LCD_print("   Cargando Gcode   ");
                 LCDGotoXY(0, 3);
-                LCD_print("Pres x para salir");
+                LCD_print("Pres STOP para salir");
                 uint16_t cant_lines=SD_contar_lineas_archivo(nombree);
                 if(cant_lines == 0 || cant_lines>65534){
                     LCDGotoXY(0, 1);
@@ -143,7 +142,7 @@ void Cargar_gcode(void){
                     vTaskDelay(200/portTICK_PERIOD_MS);
                     for(uint8_t j=1; j<cant_lines+1; j++){
                         uint8_t caracter=uart_ReadChar();
-                        if(caracter=='x'){goto end;}           //Tecla para salir del menu
+                        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){goto end;}           //Tecla para salir del menu
                         LCDGotoXY(0, 2);
                         sprintf(result, "Linea %d de %d", j, cant_lines);
                         LCD_print(result);
@@ -215,9 +214,9 @@ void menu(void){
     uint8_t i=1;
     while(true){
         uint8_t caracter=uart_ReadChar();
-        if(caracter=='x'){break;}           //Tecla para salir del menu
-        if(caracter=='<'){i--;}
-        if(caracter=='>'){i++;}
+        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Tecla para salir del menu
+        if(caracter=='<' || gpio_get_level(Tecla_baja)==0){i--;}
+        if(caracter=='>' || gpio_get_level(Tecla_sube)==0){i++;}
         if(i<1){i=5;}  if(i>5){i=1;}
         LCDclr();
         LCDGotoXY(8, 0);
@@ -233,7 +232,7 @@ void menu(void){
         if(i==4){LCD_print("Apagar dispositivo");}
         if(i==5){LCD_print("Volver");}
         
-        if(caracter=='o'){
+        if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){
             if(i==1){Set_cero();}
             if(i==2){Cargar_gcode();}
             if(i==4){Apagar();}
@@ -245,12 +244,28 @@ void menu(void){
 
 void Teclado_init(void){
     //Configuro entradas
-    gpio_pad_select_gpio(MUX_pin_1);
-	gpio_set_direction(MUX_pin_1, GPIO_MODE_INPUT);
-    gpio_pad_select_gpio(MUX_pin_2);
-	gpio_set_direction(MUX_pin_2, GPIO_MODE_INPUT);
-    gpio_pad_select_gpio(MUX_pin_3);
-	gpio_set_direction(MUX_pin_3, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_encendido);
+	gpio_set_direction(Tecla_encendido, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_start);
+	gpio_set_direction(Tecla_start, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_stop);
+	gpio_set_direction(Tecla_stop, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_reset);
+	gpio_set_direction(Tecla_reset, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_cero);
+	gpio_set_direction(Tecla_cero, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_eje);
+	gpio_set_direction(Tecla_eje, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_baja);
+	gpio_set_direction(Tecla_baja, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_sube);
+	gpio_set_direction(Tecla_sube, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_gohome);
+	gpio_set_direction(Tecla_gohome, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_pasos);
+	gpio_set_direction(Tecla_pasos, GPIO_MODE_INPUT);
+    gpio_pad_select_gpio(Tecla_fn);
+	gpio_set_direction(Tecla_fn, GPIO_MODE_INPUT);
 	//gpio_set_pull_mode(Entrada[j], GPIO_PULLDOWN_ONLY);
 }
 
@@ -258,10 +273,96 @@ void Obtener_teclado(void){
 
     uint8_t caracter=uart_ReadChar();
 
-    if(caracter=='o'){
+    if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){
         menu();
     }
 
+    if(gpio_get_level(Tecla_start)==0){
+       sprintf(buffer, "N02Start***************************************StartF");
+       ServerTCP_sendData(buffer, 53);
+    }
+
+    if(gpio_get_level(Tecla_stop)==0){
+       sprintf(buffer, "N02Stop*****************************************StopF");
+       ServerTCP_sendData(buffer, 53);
+    }
+
+    if(gpio_get_level(Tecla_reset)==0){
+       if(gpio_get_level(Tecla_fn)==0){     //Tecla rewind
+            sprintf(buffer, "N02Rewind*************************************RewindF");
+            ServerTCP_sendData(buffer, 53);
+       }else{
+            sprintf(buffer, "N02Reset***************************************ResetF");
+            ServerTCP_sendData(buffer, 53);
+       }
+    }
+
+    if(gpio_get_level(Tecla_cero)==0){
+       if(gpio_get_level(Tecla_fn)==0){
+            sprintf(buffer, "N02M1*********************************************M1F");
+            ServerTCP_sendData(buffer, 53);
+       }else{
+        if(eje=='X'){
+            sprintf(buffer, "N02ZeroX***************************************ZeroXF");
+            ServerTCP_sendData(buffer, 53);
+        }
+        if(eje=='Y'){
+            sprintf(buffer, "N02ZeroY***************************************ZeroYF");
+            ServerTCP_sendData(buffer, 53);
+        }
+        if(eje=='Z'){
+            sprintf(buffer, "N02ZeroZ***************************************ZeroZF");
+            ServerTCP_sendData(buffer, 53);
+        }
+        if(eje=='A'){
+            sprintf(buffer, "N02ZeroA***************************************ZeroAF");
+            ServerTCP_sendData(buffer, 53);
+        }
+       }
+    }
+
+    if(gpio_get_level(Tecla_eje)==0){
+       if(gpio_get_level(Tecla_fn)==0){
+            sprintf(buffer, "N02M2*********************************************M2F");
+            ServerTCP_sendData(buffer, 53);
+       }else{
+        if(eje=='A'){
+            eje='Y';
+        }else{
+            if(eje=='Y'){
+                eje='Z';
+            }else{
+                if(eje=='Z'){
+                    eje='A';
+                }else{
+                    if(eje=='A'){
+                        eje='X';
+                    }
+                }
+            }
+        }
+       }
+    }
+
+    if(gpio_get_level(Tecla_gohome)==0){
+       if(gpio_get_level(Tecla_fn)==0){
+            sprintf(buffer, "N02M3*********************************************M3F");
+            ServerTCP_sendData(buffer, 53);
+       }else{
+            sprintf(buffer, "N02HOME*****************************************HOMEF");
+            ServerTCP_sendData(buffer, 53);
+       }
+    }
+
+    if(gpio_get_level(Tecla_pasos)==0){
+       if(gpio_get_level(Tecla_fn)==0){
+            sprintf(buffer, "N02M4*********************************************M4F");
+            ServerTCP_sendData(buffer, 53);
+       }else{
+            pasos=pasos*10;
+            if(pasos>=10){pasos=0.0001;}
+       }
+    }
     
 }
 
