@@ -30,3 +30,9 @@
 #define MUX_pin_1 GPIO_NUM_34
 #define MUX_pin_2 GPIO_NUM_2
 #define MUX_pin_3 GPIO_NUM_4
+#define MUX2_pin_1 GPIO_NUM_34
+#define MUX2_pin_2 GPIO_NUM_2
+#define MUX2_pin_3 GPIO_NUM_4
+#define PIN_encoder_A GPIO_NUM_36
+#define PIN_encoder_B GPIO_NUM_36
+#define PIN_VBAT ADC1_CHANNEL_6  //pin gpio_34

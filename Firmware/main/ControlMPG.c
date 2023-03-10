@@ -15,6 +15,8 @@
 #include "../include/Wifi_ServerTCP.h"
 #include "../include/SDcard.h"
 #include "../include/Uart.h"
+#include "../include/Interrupcion_gpio.h"
+#include "../include/ADC.h"
 
 
 /*===================================================[Prototipos de funciones]===============================================*/
@@ -27,8 +29,39 @@ static char tag3[] = "Control_debug";
 /*===================================================[Variables]===============================================*/
 TaskHandle_t TaskHandle_1 = NULL;
 char buffer[54];                   //Sirve para enviar datos por TCP/IP
+portMUX_TYPE mux3 = portMUX_INITIALIZER_UNLOCKED; //Inicializa el spinlock desbloqueado
+uint8_t pasos_encoder=0;
+float pasos=0.0001;  //Para indicar x1 x0.1 x0.01 x0.001 x0.0001
+char eje='X';
+char signo='+';
+char incremento=1;
 
 /*===================================================[Implementaciones]===============================================*/
+
+/*========================================================================
+Funcion: IRAM_ATTR gpio_isr_handlers
+Descripcion: Funcion que se llama por la interrupcion del pin de cruce por cero, 
+             se usa para activar el timer, una vez que el timer desborda, se pausa.
+Parametro de entrada: corriente deseada como setpoint
+No retorna nada
+========================================================================*/
+static void IRAM_ATTR gpio_isr_handlers(void* arg)
+{
+   portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
+   pasos_encoder++;
+   portEXIT_CRITICAL(&mux3);
+   if ( gpio_get_level(PIN_encoder_B) == 0) {
+        // El pin B está en bajo, se está moviendo en dirección horaria
+        portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
+        signo='+';
+        portEXIT_CRITICAL(&mux3);
+   } else {
+        // El pin B está en alto, se está moviendo en dirección antihoraria
+        portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
+        signo='-';
+        portEXIT_CRITICAL(&mux3);
+   }
+}
 
 void Set_cero(void){
     while (true){
@@ -229,7 +262,6 @@ void Teclado_init(void){
 	gpio_set_direction(MUX_pin_2, GPIO_MODE_INPUT);
     gpio_pad_select_gpio(MUX_pin_3);
 	gpio_set_direction(MUX_pin_3, GPIO_MODE_INPUT);
-
 	//gpio_set_pull_mode(Entrada[j], GPIO_PULLDOWN_ONLY);
 }
 
@@ -242,41 +274,86 @@ void Obtener_teclado(void){
     }
 
     uint8_t valor=0;
+    uint8_t valor2=0;
+
+    //Mux1
     if(gpio_get_level(MUX_pin_1)==1){valor=valor|0b001;} //DEC =1
     if(gpio_get_level(MUX_pin_2)==1){valor=valor|0b010;} //DEC =2
     if(gpio_get_level(MUX_pin_3)==1){valor=valor|0b100;} //DEC =4
 
-    
+    //Mux2
+    if(gpio_get_level(MUX2_pin_1)==1){valor2=valor2|0b001;} //DEC =1
+    if(gpio_get_level(MUX2_pin_2)==1){valor2=valor2|0b010;} //DEC =2
+    if(gpio_get_level(MUX2_pin_3)==1){valor2=valor2|0b100;} //DEC =4
 
+    //Demux1
     switch (valor) {
-        case 0:
+        case (0b000):     //Q0
             
             break;
-        case 1:
+        case (0b001):     //Q1
             strcpy(buffer, "N0451*********************************************51F");
             ServerTCP_sendData(buffer, 53);
             break;
-        case 2:
+        case (0b010):     //Q2
             strcpy(buffer, "N0451*********************************************51F");
             ServerTCP_sendData(buffer, 53);
             break;
-        case 3:
+        case (0b011):     //Q3
             strcpy(buffer, "N0451*********************************************51F");
             ServerTCP_sendData(buffer, 53);
             break;
-        case 4:
+        case (0b100):     //Q4
             strcpy(buffer, "N0451*********************************************51F");
             ServerTCP_sendData(buffer, 53);
             break;
-        case 5:
+        case (0b101):     //Q5
             strcpy(buffer, "N0451*********************************************51F");
             ServerTCP_sendData(buffer, 53);
             break;
-        case 6:
+        case (0b110):     //Q6
             strcpy(buffer, "N0451*********************************************51F");
             ServerTCP_sendData(buffer, 53);
             break;
-        case 7:
+        case (0b111):     //Q7
+            strcpy(buffer, "N0451*********************************************51F");
+            ServerTCP_sendData(buffer, 53);
+            break;
+        default:
+            break;
+    }
+
+
+
+    //Demux2
+    switch (valor2) {
+        case (0b000):     //Q0
+            break;
+        case (0b001):     //Q1
+            strcpy(buffer, "N0451*********************************************51F");
+            ServerTCP_sendData(buffer, 53);
+            break;
+        case (0b010):     //Q2
+            strcpy(buffer, "N0451*********************************************51F");
+            ServerTCP_sendData(buffer, 53);
+            break;
+        case (0b011):     //Q3
+            strcpy(buffer, "N0451*********************************************51F");
+            ServerTCP_sendData(buffer, 53);
+            break;
+        case (0b100):     //Q4
+            strcpy(buffer, "N0451*********************************************51F");
+            ServerTCP_sendData(buffer, 53);
+            break;
+        case (0b101):     //Q5
+            strcpy(buffer, "N0451*********************************************51F");
+            ServerTCP_sendData(buffer, 53);
+            break;
+        case (0b110):     //Q6
+            strcpy(buffer, "N0451*********************************************51F");
+            ServerTCP_sendData(buffer, 53);
+            break;
+        case (0b111):     //Q7
             strcpy(buffer, "N0451*********************************************51F");
             ServerTCP_sendData(buffer, 53);
             break;
@@ -296,15 +373,38 @@ void ControlMPG_init(void){
     Teclado_init();
     SD_init();
     uart_init();
+    config_gpio_como_int(PIN_encoder_A, GPIO_INTR_NEGEDGE, GPIO_PULLUP_DISABLE, GPIO_PULLDOWN_DISABLE, &gpio_isr_handlers); //Activa interrupcion del pin de deteccion de cruce por cero. Funcion  gpio_isr_handlers
+    gpio_pad_select_gpio(PIN_encoder_A);
+    gpio_pad_select_gpio(PIN_encoder_B);
+    gpio_set_direction(PIN_encoder_A, GPIO_MODE_INPUT);
+    gpio_set_direction(PIN_encoder_B, GPIO_MODE_INPUT);
+    //Configuro los canales ADC para realizar mediciones
+    config_adc(1, PIN_VBAT, ADC_WIDTH_12Bit, ADC_ATTEN_6db); //Canal 1 para leer tension bateria
 }
 
 static void ControlMPG(void *pvParameters) {
     if(ServerTCP_socket_init(1)==false){ESP_LOGE(tag3, "Error al iniciar socket. Reiniciando ESP"); esp_restart();}
     
     while (1) {
-        
+        uint16_t lectura=Leer_adc(1, PIN_VBAT, 5, ADC_WIDTH_12Bit);
+        double voltaje_local=((lectura*3.3)/4095.0)*11; //Obtengo el valor de tension en el adc
+
+        portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
+        if(pasos_encoder>0){
+            if (pasos_encoder>9999){pasos_encoder=9999;}
+            sprintf(buffer, "N01S%06.4f%c%c%04d************************************F", pasos, eje, signo, pasos_encoder);
+            //strcpy(buffer, "N01S0.0001X+1000************************************F");
+        }
+        uint8_t pasos_encoder_local=pasos_encoder;
+        pasos_encoder=0;
+        portEXIT_CRITICAL(&mux3);
+
+        if(pasos_encoder_local>0){
+            if(ServerTCP_sendData(buffer, 53)==true){ }
+        }
+                
+
         bool conectado=false;
-        char buffer[54];
         strcpy(buffer, "N0451*********************************************51F");
         if(ServerTCP_sendData(buffer, 53)==true){    //Si se pudo enviar
             conectado=true;
