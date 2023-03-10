@@ -119,41 +119,37 @@ void Cargar_gcode(void){
         if(caracter=='>'){memset(nombree, 0, sizeof(nombree)); SD_buscar_enlist(nombree, true); } //Busca archivo siguiente
         LCDGotoXY(0, 2);
         LCD_print(nombree);
-
+    
         if(caracter=='o'){
             while(true){
                 LCDGotoXY(0, 0);
-                LCD_print("   Cargando Gcode");
+                LCD_print("   Cargando Gcode   ");
                 LCDGotoXY(0, 3);
                 LCD_print("Pres x para salir");
-                uint8_t cant_lines=SD_contar_lineas_archivo(nombree);
-                if(cant_lines == 0){
+                uint16_t cant_lines=SD_contar_lineas_archivo(nombree);
+                if(cant_lines == 0 || cant_lines>65534){
                     LCDGotoXY(0, 1);
-                    LCD_print("No hay archivos");
+                    LCD_print("Archivo nulo-grande ");
                     vTaskDelay(2000/portTICK_PERIOD_MS);
                     goto end;
                 }else{
-                    //char result[32];
-                    memset(buffer, '*', sizeof(buffer));
+                    char result[32];
                     char contenido_linea[1024];
-                    char num_final[11];
-                    sprintf(num_final, "%04d", cant_lines);
-                    buffer[48]=num_final[0];  buffer[49]=num_final[1];   buffer[50]=num_final[2]; buffer[51]=num_final[3];
-                    buffer[0]='N';  buffer[1]='0';  buffer[2]='3'; buffer[7]='C'; buffer[46]='N'; buffer[47]='f'; buffer[52]='F';  
-                        
+                    uint32_t N_caracteres_totales=0;
+                    
+                    sprintf(buffer, "N03START***************************************%05dF", cant_lines);
+                    ServerTCP_sendData(buffer, 53);
+                    //ESP_LOGW(tag3, "%s", buffer);
+                    vTaskDelay(200/portTICK_PERIOD_MS);
                     for(uint8_t j=1; j<cant_lines+1; j++){
                         uint8_t caracter=uart_ReadChar();
                         if(caracter=='x'){goto end;}           //Tecla para salir del menu
                         LCDGotoXY(0, 2);
-                        //sprintf(result, "Linea %d de %d", j, cant_lines);
-                        //LCD_print(result);
+                        sprintf(result, "Linea %d de %d", j, cant_lines);
+                        LCD_print(result);
                         memset(contenido_linea, 0, sizeof(contenido_linea));
                         SD_obtener_linea(contenido_linea, nombree, j);
-                        
-                        char num_actual[11];
-                        sprintf(num_actual, "%04d", j);
-                        buffer[3]=num_actual[0];  buffer[4]=num_actual[1];  buffer[5]=num_actual[2]; buffer[6]=num_actual[3];
-                        
+
                         //Borro el caracter salto de linea
                         uint8_t q = 0;
                         while(contenido_linea[q] != '\0') {
@@ -164,46 +160,39 @@ void Cargar_gcode(void){
                             q++;
                         }
 
-                        uint8_t N_caracteres=strlen(contenido_linea);
+                        N_caracteres_totales=N_caracteres_totales+strlen(contenido_linea);
                         
-                                                
-                        if(N_caracteres>38){               //Si es mayor, parto el mensaje en 2
-                            buffer[46]='A';
-                            for(uint8_t h=0; h<38; h++){
-                                buffer[8+h]=contenido_linea[h];
-                            }
-                            ServerTCP_sendData(buffer, 53);
-                            ESP_LOGW(tag3, "%s", buffer); 
-                            vTaskDelay(15/portTICK_PERIOD_MS);
-                            buffer[46]='F';
-                            for(uint8_t p=0; p<38; p++){
-                                if(p+38<N_caracteres){  buffer[8+p]=contenido_linea[p+38];}
-                                if(p+38>=N_caracteres){ buffer[8+p]='*';}
-                            }
-                            ServerTCP_sendData(buffer, 53);
-                            ESP_LOGW(tag3, "%s", buffer); 
-                        }else{                  //Si esta dentro del protocolo, mando directo
-                            buffer[46]='N';
-                            for(uint8_t p=0; p<38; p++){
-                                if(p<N_caracteres){ buffer[8+p]=contenido_linea[p];}
-                                if(p>=N_caracteres){ buffer[8+p]='*';}
-                            }
-                            ServerTCP_sendData(buffer, 53);
-                            ESP_LOGW(tag3, "%s", buffer); 
-                        }   
-                        vTaskDelay(15/portTICK_PERIOD_MS);
+                        ServerTCP_sendData(contenido_linea, strlen(contenido_linea));
+                        //ESP_LOGW(tag3, "%s", contenido_linea); 
+                        vTaskDelay(50/portTICK_PERIOD_MS);
                     }
-                    printf("FIN");
+
+                    vTaskDelay(200/portTICK_PERIOD_MS);
+                    sprintf(buffer, "N03FIN***********************************L%010dF", N_caracteres_totales);
+                    ServerTCP_sendData(buffer, 53);
+                    //ESP_LOGW(tag3, "%s", buffer);
+                    //printf("FIN");
                     LCDGotoXY(0, 2);
-                    LCD_print("Verificando...");
+                    LCD_print("Verificando...      ");
                     uint8_t timeout=0;
                     while(true){
+                        uint8_t len=ServerTCP_leermensaje(buffer);
+                        if(len>0){
+                            if(len==53){
+                                if(buffer[0]=='N' && buffer[1]=='5' && buffer[2]=='3' && buffer[3]=='C' && buffer[52]=='F'){
+                                    LCDGotoXY(0, 2);
+                                    LCD_print("Cargado correctament");
+                                    vTaskDelay(3000/portTICK_PERIOD_MS);
+                                    goto end;
+                                }
+                            }
+                        }
                         timeout++;
-                        vTaskDelay(100/portTICK_PERIOD_MS);
+                        vTaskDelay(300/portTICK_PERIOD_MS);
                         if(timeout>4){
                             LCDGotoXY(0, 2);
                             LCD_print("Error al pasar gcode");
-                            vTaskDelay(1000/portTICK_PERIOD_MS);
+                            vTaskDelay(3000/portTICK_PERIOD_MS);
                             goto end;
                         }
                     }
@@ -273,98 +262,12 @@ void Obtener_teclado(void){
         menu();
     }
 
-    uint8_t valor=0;
-    uint8_t valor2=0;
-
-    //Mux1
-    if(gpio_get_level(MUX_pin_1)==1){valor=valor|0b001;} //DEC =1
-    if(gpio_get_level(MUX_pin_2)==1){valor=valor|0b010;} //DEC =2
-    if(gpio_get_level(MUX_pin_3)==1){valor=valor|0b100;} //DEC =4
-
-    //Mux2
-    if(gpio_get_level(MUX2_pin_1)==1){valor2=valor2|0b001;} //DEC =1
-    if(gpio_get_level(MUX2_pin_2)==1){valor2=valor2|0b010;} //DEC =2
-    if(gpio_get_level(MUX2_pin_3)==1){valor2=valor2|0b100;} //DEC =4
-
-    //Demux1
-    switch (valor) {
-        case (0b000):     //Q0
-            
-            break;
-        case (0b001):     //Q1
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b010):     //Q2
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b011):     //Q3
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b100):     //Q4
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b101):     //Q5
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b110):     //Q6
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b111):     //Q7
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        default:
-            break;
-    }
-
-
-
-    //Demux2
-    switch (valor2) {
-        case (0b000):     //Q0
-            break;
-        case (0b001):     //Q1
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b010):     //Q2
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b011):     //Q3
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b100):     //Q4
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b101):     //Q5
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b110):     //Q6
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        case (0b111):     //Q7
-            strcpy(buffer, "N0451*********************************************51F");
-            ServerTCP_sendData(buffer, 53);
-            break;
-        default:
-            break;
-    }
+    
 }
 
 
 void ControlMPG_init(void){
-    esp_err_t ret = xTaskCreate(&ControlMPG, "ControlMPG", 5072, NULL, 2, &TaskHandle_1); //Creo tarea
+    esp_err_t ret = xTaskCreate(&ControlMPG, "ControlMPG", 7072, NULL, 2, &TaskHandle_1); //Creo tarea
     if (ret != pdPASS)  {
         ESP_LOGE(tag3, "Error al crear tarea ControlMPG. Reiniciando ESP"); 
         esp_restart();

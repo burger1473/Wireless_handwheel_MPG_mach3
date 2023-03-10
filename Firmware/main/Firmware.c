@@ -62,12 +62,6 @@ void app_main() {
     LCD_print("Bienvenido");
 
     vTaskDelay(3000/portTICK_PERIOD_MS);
-    /*
-    for(uint8_t i=0; i<200; i++){
-        ets_delay_us(25000);
-        esp_task_wdt_reset();
-    }
-    */
 
     iniciarWifi();        //Inicio WIFI en modo dual
     //iniciarWifi()  crea una tarea que maneja todo el periferico wifi.

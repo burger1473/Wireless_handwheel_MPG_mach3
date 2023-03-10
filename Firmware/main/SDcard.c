@@ -83,7 +83,7 @@ bool SD_cerrar_archivo(void){
     return false;
 }
 
-uint8_t SD_contar_lineas_archivo(char *nombre){
+int16_t SD_contar_lineas_archivo(char *nombre){
     char result[100];
     sprintf(result, "%s/%s", MOUNT_POINT, nombre);
     FILE* f = fopen(result, "r");
@@ -92,7 +92,7 @@ uint8_t SD_contar_lineas_archivo(char *nombre){
         return 0;
     }
     char buffer[1024];
-    int line_number = 1;
+    int16_t line_number = 1;
     while (fgets(buffer, sizeof(buffer), f)) {
         //printf("Line %d: %s", line_number, buffer);
         line_number++;
@@ -101,7 +101,7 @@ uint8_t SD_contar_lineas_archivo(char *nombre){
     return (line_number-1);
 }
 
-bool SD_obtener_linea(char *texto, char *nombre_archivo, uint8_t linea){
+bool SD_obtener_linea(char *texto, char *nombre_archivo, int16_t linea){
     char result[100];
     sprintf(result, "%s/%s", MOUNT_POINT, nombre_archivo);
     FILE* f = fopen(result, "r");
@@ -111,7 +111,7 @@ bool SD_obtener_linea(char *texto, char *nombre_archivo, uint8_t linea){
     }
     char buffer[1024];
     memset(buffer, 0, sizeof(buffer));
-    int line_number = 1;
+    int16_t line_number = 1;
     while (fgets(buffer, sizeof(buffer), f)) {
         //printf("Line %d: %s", line_number, buffer);
         if(line_number==linea){
