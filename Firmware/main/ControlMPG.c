@@ -465,8 +465,8 @@ static void ControlMPG(void *pvParameters) {
             //LCDclr();
             LCDGotoXY(0, 0);
             LCD_print("C-- ---");
-            LCDGotoXY(10, 0);
-            LCD_print("ControlMPG");
+            //LCDGotoXY(10, 0);
+            //LCD_print("ControlMPG");
             uint8_t len=ServerTCP_leermensaje(buffer);
             //Muestro los valores de los ejes en el display
             if(len>0){            
@@ -522,18 +522,6 @@ static void ControlMPG(void *pvParameters) {
                             LCDGotoXY(3+i, 3);
                             LCD_print_char(buffer[28+i]);
                         }
-
-                        char texto[6];
-                        sprintf(buffer, "%c", eje);  
-                        LCDGotoXY(3, 19);
-                        LCD_print(buffer);
-
-                        portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
-                        sprintf(buffer, "%.4f", pasos);
-                        portEXIT_CRITICAL(&mux3);
-                        LCDGotoXY(2, 14);
-                        LCD_print(buffer);
-                        
                     }
                     //Si el dato es de informacion de proceso
                     //N02EL00:00ES00:00NL0000LA0000***********************F
@@ -552,8 +540,8 @@ static void ControlMPG(void *pvParameters) {
             LCDclr();
             LCDGotoXY(0, 0);
             LCD_print("NC- ---");
-            LCDGotoXY(10, 0);
-            LCD_print("ControlMPG");
+            //LCDGotoXY(10, 0);
+            //LCD_print("ControlMPG");
             LCDGotoXY(0, 1);
             LCD_print("X:     +-.----");
             LCDGotoXY(0, 2);
@@ -563,6 +551,21 @@ static void ControlMPG(void *pvParameters) {
             LCDcursorOFF();
         }
         
+        //char texto[6];
+        char *texto;
+        texto = (char*) malloc(7*sizeof(char));    //Asigno memoria dinamica
+
+        sprintf(buffer, "%c", eje);  
+        LCDGotoXY(10, 0);
+        LCD_print(buffer);
+
+        portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
+        sprintf(buffer, "%.4f", pasos);
+        portEXIT_CRITICAL(&mux3);
+        LCDGotoXY(14, 0);
+        LCD_print(buffer);
+        free(texto);                                //Libero memoria dinamica
+
         Obtener_teclado();                        //Lee los pulsadores
         
         vTaskDelay(200/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
