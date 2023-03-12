@@ -55,13 +55,12 @@ void LCD_init(void){
     gpio_set_level(LCD_pin_D6, 0);
     gpio_set_level(LCD_pin_D7, 0);
 
-    ets_delay_us(20000);
-    //vTaskDelay(20 / portTICK_PERIOD_MS);        //Espero 20 milisegundo
+    ets_delay_us(20000);                        //Retardo de 20ms
 
     gpio_set_level(LCD_pin_RS, 0);              //Pongo en cero para indicar que es mensaje de configuracion y no de escritura de mensaje
  
     //Inicailizacion diaplay
-    for(char i=0; i<3; i++){ //envio 3 veces el 0b000011
+    for(char i=0; i<3; i++){                    //Envio 3 veces el valor 0b000011
         LCDsend_nibble(0b0011);
         LCD_EnableCmd();	
         ets_delay_us(5000);
@@ -111,23 +110,42 @@ void LCD_init(void){
  
 }
 
+/*========================================================================
+Funcion: LCD_print
+Descripcion: Envia un string al LCD
+Parametro de entrada: char * str: puntero al string que se desea escribir
+No retorna nada
+========================================================================*/
 void LCD_print(char * str){
     portENTER_CRITICAL(&mux2);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
     unsigned char i = 0;
-	while (str[i] !=0)
+	while (str[i] !=0)                                       //Recorre el string
 	{
-		LCDsendChar(str[i]);
+		LCDsendChar(str[i]);                                 //Envia cada caracter del string
 		i++ ;
 	}
     portEXIT_CRITICAL(&mux2);                                //Salgo seccion critica
 }
 
+/*========================================================================
+Funcion: LCD_print_char
+Descripcion: Envia un string al LCD
+Parametro de entrada: char str: caracter que se desea escribir
+No retorna nada
+========================================================================*/
 void LCD_print_char(char str){
     portENTER_CRITICAL(&mux2);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
-    LCDsendChar(str);
+    LCDsendChar(str);                                        //Se escribe caracter
     portEXIT_CRITICAL(&mux2);                                //Salgo seccion critica
 }
 
+/*========================================================================
+Funcion: LCDGotoXY
+Descripcion: Posiciona el cursor del lcd en una fila y columna indicada
+Parametro de entrada: uint8_t columna
+                      uint8_t fila
+No retorna nada
+========================================================================*/
 void LCDGotoXY(uint8_t columna, uint8_t fila)	//POSICIONA EL CURSOR EN X y Y
 {
     portENTER_CRITICAL(&mux2);                               //Seccion critica ya que la mayoria de las variables se modifican en otras tareas o interrupciones
@@ -147,6 +165,13 @@ void LCDGotoXY(uint8_t columna, uint8_t fila)	//POSICIONA EL CURSOR EN X y Y
 }
 
 
+/*========================================================================
+Funcion: LCDsend_nibble
+Descripcion: Coloca los 4 bits de dat como uno o cero segun corresponda en D7, D6, D5, D4.
+Parametro de entrada: uint8_t columna
+                      uint8_t fila
+No retorna nada
+========================================================================*/
 void LCDsend_nibble(uint8_t dat)	//ENVIA EL COMANDO AL LCD
 {   
 	//Transformo los 1 y 0 del nibble en salidas hacia el display
@@ -157,6 +182,12 @@ void LCDsend_nibble(uint8_t dat)	//ENVIA EL COMANDO AL LCD
 
 }
 
+/*========================================================================
+Funcion: LCD_EnableCmd
+Descripcion: Envio los pulsos de enable necesario para que impacte el dato que estan en los 4 hilos
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
 void LCD_EnableCmd(void)
 {
     //Doy pulso a enable para indicar que se mando el dato
@@ -169,6 +200,12 @@ void LCD_EnableCmd(void)
     //vTaskDelay(1 / portTICK_PERIOD_MS); //Espero 1 milisegundo
 }
 
+/*========================================================================
+Funcion: LCD_EnableChar
+Descripcion: Envio los pulsos de enable necesario para que impacte el dato que estan en los 4 hilos
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
 void LCD_EnableChar(void)
 {
     //Doy pulso a enable para indicar que se mando el dato
@@ -179,28 +216,40 @@ void LCD_EnableChar(void)
     gpio_set_level(LCD_pin_E, 1);
 }
 
+/*========================================================================
+Funcion: LCDsendChar
+Descripcion: Envia dato de configuracion. Como se trabaja con 4 hilos, no se pueden enviar los 8 bits de una. Por lo tanto se envia en forma de nibbles. Primero se envie los 4 bits mas significativo y luego los 4 menos significativos.
+Parametro de entrada:  uint8_t Dato: dato de configuracion
+No retorna nada
+========================================================================*/
 void LCDsendChar(uint8_t Dato)
 {
-    gpio_set_level(LCD_pin_RS, 1);
+    gpio_set_level(LCD_pin_RS, 1);              //Coloca RS en 1 para indicar que se envia un mensje y no un comando
 
-	uint8_t DatAux=Dato;
-	Dato>>=4;
-    LCDsend_nibble(Dato);
-    LCD_EnableChar();
-	LCDsend_nibble(DatAux);
-    LCD_EnableChar();
+	uint8_t DatAux=Dato;                        //Dato auxiliar para desplzar bits y poder enviar por separado en 2 de 4 bits
+	Dato>>=4;                                   //Desplazo 4 bits para que queden los 4 mas significativo al incio
+    LCDsend_nibble(Dato);                       //Envio los bits desplazados    
+    LCD_EnableChar();                           //Realizo secuencia de enable para que impacte el dato 
+	LCDsend_nibble(DatAux);                     //Envio los otros 4 bits
+    LCD_EnableChar();                           //Realizo secuencia de enable para que impacte el dato 
 }
 
+/*========================================================================
+Funcion: LCDsendCommand
+Descripcion: Envia caracter al display. Como se trabaja con 4 hilos, no se pueden enviar los 8 bits de una. Por lo tanto se envia en forma de nibbles. Primero se envie los 4 bits mas significativo y luego los 4 menos significativos.
+Parametro de entrada:  uint8_t Dato: caracter a enviar
+No retorna nada
+========================================================================*/
 void LCDsendCommand(uint8_t Dato)
 {
-	gpio_set_level(LCD_pin_RS, 0);
+	gpio_set_level(LCD_pin_RS, 0);               //Coloca RS en 1 para indicar que se envia un comando y no un mensaje
 
-	uint8_t DatAux=Dato;
-	Dato>>=4;
-    LCDsend_nibble(Dato);
-    LCD_EnableCmd();
-	LCDsend_nibble(DatAux);
-    LCD_EnableCmd();
+	uint8_t DatAux=Dato;                         //Dato auxiliar para desplzar bits y poder enviar por separado en 2 de 4 bits
+	Dato>>=4;                                    //Desplazo 4 bits para que queden los 4 mas significativo al incio
+    LCDsend_nibble(Dato);                        //Envio los bits desplazados
+    LCD_EnableCmd();                             //Realizo secuencia de enable para que impacte el dato
+	LCDsend_nibble(DatAux);                      //Envio los otros 4 bits
+    LCD_EnableCmd();                             //Realizo secuencia de enable para que impacte el dato
 }
 
 void LCDclr(void)

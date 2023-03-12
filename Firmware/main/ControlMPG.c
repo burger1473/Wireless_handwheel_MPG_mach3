@@ -30,10 +30,10 @@ static char tag3[] = "Control_debug";
 TaskHandle_t TaskHandle_1 = NULL;
 char buffer[54];                   //Sirve para enviar datos por TCP/IP
 portMUX_TYPE mux3 = portMUX_INITIALIZER_UNLOCKED; //Inicializa el spinlock desbloqueado
-uint8_t pasos_encoder=0;
-float pasos=0.0001;  //Para indicar x1 x0.1 x0.01 x0.001 x0.0001
-char eje='X';
-char signo='+';
+uint8_t pasos_encoder=0; //Variable que contiene lo que se incremento el encoder
+float pasos=0.0001;      //Para indicar x1 x0.1 x0.01 x0.001 x0.0001
+char eje='X';            //Eje actual
+char signo='+';          //Signo de movimeinto actual (se modifica con el encoder segun como gire)
 
 /*===================================================[Implementaciones]===============================================*/
 
@@ -41,7 +41,7 @@ char signo='+';
 Funcion: IRAM_ATTR gpio_isr_handlers
 Descripcion: Funcion que se llama por la interrupcion del pin de cruce por cero, 
              se usa para activar el timer, una vez que el timer desborda, se pausa.
-Parametro de entrada: corriente deseada como setpoint
+Sin parametro de entrada
 No retorna nada
 ========================================================================*/
 static void IRAM_ATTR gpio_isr_handlers(void* arg)
@@ -62,6 +62,12 @@ static void IRAM_ATTR gpio_isr_handlers(void* arg)
    }
 }
 
+/*========================================================================
+Funcion: Set_cero
+Descripcion: Setea en cero el eje Y
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
 void Set_cero(void){
     while (true){
         LCDclr();
@@ -72,13 +78,14 @@ void Set_cero(void){
         LCDGotoXY(0, 3);
         LCD_print("Pres x para salir");
         uint8_t caracter=uart_ReadChar();
-        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Tecla para salir del menu
-        if(caracter=='z' || gpio_get_level(PIN_opto)==0){break;}           //Entrada opto
-        strcpy(buffer, "N01S0.0001X+0100************************************F");
+        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}               //Tecla para salir del menu
+        if(caracter=='z' || gpio_get_level(PIN_opto)==0){break;}                 //Si el opto detecta, salgo del while
+        strcpy(buffer, "N01S0.0001X+0100************************************F"); //Mientras el while siga, envio al mach3 que baje el eje y
         ServerTCP_sendData(buffer, 53);     //Aumento un paso en match3
         vTaskDelay(200/portTICK_PERIOD_MS);
     }
 
+    //Se baja el espesor de la chapa (si se desea )
     while(true){
         LCDclr();
         LCDGotoXY(0, 0);
@@ -88,11 +95,11 @@ void Set_cero(void){
         LCDGotoXY(0, 3);
         LCD_print("Pres STOP para no");
         uint8_t caracter=uart_ReadChar();
-        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Tecla para salir del menu
-        if(caracter=='s' || gpio_get_level(Tecla_encendido)==0){  
-            strcpy(buffer, "N01S0.0001X+1000************************************F");
+        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Si presiona salir, sale del while
+        if(caracter=='s' || gpio_get_level(Tecla_encendido)==0){             //Si se desea bajar
+            strcpy(buffer, "N01S0.0001X+1000************************************F"); //Bajo el espesor por mach3
             ServerTCP_sendData(buffer, 53);     //Aumento un paso en match3
-            break;                          //Tecla para salir del menu
+            break;                              //Salgo
         }           
         vTaskDelay(300/portTICK_PERIOD_MS);
     }
@@ -100,6 +107,12 @@ void Set_cero(void){
 }
 
 
+/*========================================================================
+Funcion: Cargar_gcode
+Descripcion: Carga GCODE
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
 void Cargar_gcode(void){
     while(true){
         LCDclr();
@@ -111,7 +124,7 @@ void Cargar_gcode(void){
         LCD_print("STOP para salir    <");
         
         uint8_t caracter=uart_ReadChar();
-        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Tecla para salir del menu
+        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Aborto tarea y salgo
 
         char nombree[512];
         if(caracter=='<' || gpio_get_level(Tecla_baja)==0){memset(nombree, 0, sizeof(nombree)); SD_buscar_enlist(nombree, false);} //Busca archivo anterior
@@ -119,39 +132,38 @@ void Cargar_gcode(void){
         LCDGotoXY(0, 2);
         LCD_print(nombree);
     
-        if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){
+        if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){            //Si estoy posicionado en el archivo que deseo y preciona enter
             while(true){
                 LCDGotoXY(0, 0);
                 LCD_print("   Cargando Gcode   ");
                 LCDGotoXY(0, 3);
                 LCD_print("Pres STOP para salir");
-                uint16_t cant_lines=SD_contar_lineas_archivo(nombree);
-                if(cant_lines == 0 || cant_lines>65534){
+                uint16_t cant_lines=SD_contar_lineas_archivo(nombree);      //Obteiene el numero de lineas de archivo
+                if(cant_lines == 0 || cant_lines>65534){                    //Si es 0 o el valor mayimo permitido
                     LCDGotoXY(0, 1);
-                    LCD_print("Archivo nulo-grande ");
+                    LCD_print("Archivo nulo-grande ");                      //Indico error y salgo al menu
                     vTaskDelay(2000/portTICK_PERIOD_MS);
                     goto end;
-                }else{
-                    char result[32];
-                    char contenido_linea[1024];
-                    uint32_t N_caracteres_totales=0;
-                    
-                    sprintf(buffer, "N03START***************************************%05dF", cant_lines);
-                    ServerTCP_sendData(buffer, 53);
+                }else{                                                     //Si la cantidad de lines son correctas
+                    char result[32];                                       //Para imprimir en display
+                    char contenido_linea[1024];                            //Para alamcenar el contenido de cada linea
+                    uint32_t N_caracteres_totales=0;                       //Para guardar el numero de caracteres totales del archivo
+                    sprintf(buffer, "N03START***************************************%05dF", cant_lines);  //Indico al soft de windows que voy a enviar un gcode  con la cantidad de lineas que posee
+                    ServerTCP_sendData(buffer, 53); 
                     //ESP_LOGW(tag3, "%s", buffer);
-                    vTaskDelay(200/portTICK_PERIOD_MS);
-                    for(uint8_t j=1; j<cant_lines+1; j++){
+                    vTaskDelay(200/portTICK_PERIOD_MS);                    //Retardo
+                    for(uint8_t j=1; j<cant_lines+1; j++){                 //Recorro cada linea del archivo
                         uint8_t caracter=uart_ReadChar();
-                        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){goto end;}           //Tecla para salir del menu
+                        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){goto end;}           //Si se aborta el proceso, retorno al menu
                         LCDGotoXY(0, 2);
-                        sprintf(result, "Linea %d de %d", j, cant_lines);
+                        sprintf(result, "Linea %d de %d", j, cant_lines);  //Indico la linea que se esta enviando
                         LCD_print(result);
-                        memset(contenido_linea, 0, sizeof(contenido_linea));
-                        SD_obtener_linea(contenido_linea, nombree, j);
+                        memset(contenido_linea, 0, sizeof(contenido_linea)); //seteo la variable en vacio
+                        SD_obtener_linea(contenido_linea, nombree, j);     //Obtengo el contenido de la linea
 
                         //Borro el caracter salto de linea
                         uint8_t q = 0;
-                        while(contenido_linea[q] != '\0') {
+                        while(contenido_linea[q] != '\0') {     
                             if(contenido_linea[q] == '\n') {
                                 contenido_linea[q] = '\0';
                                 break;
@@ -159,40 +171,41 @@ void Cargar_gcode(void){
                             q++;
                         }
 
-                        N_caracteres_totales=N_caracteres_totales+strlen(contenido_linea);
+                        N_caracteres_totales=N_caracteres_totales+strlen(contenido_linea);  //Voy sumando los caracteres totales del archivo
                         
-                        ServerTCP_sendData(contenido_linea, strlen(contenido_linea));
+                        ServerTCP_sendData(contenido_linea, strlen(contenido_linea));       //Envio el contenido de la linea
                         //ESP_LOGW(tag3, "%s", contenido_linea); 
-                        vTaskDelay(50/portTICK_PERIOD_MS);
+                        vTaskDelay(50/portTICK_PERIOD_MS);                                  //Retardo para no saturar el ESP y el servidor tcp
                     }
 
-                    vTaskDelay(200/portTICK_PERIOD_MS);
-                    sprintf(buffer, "N03FIN***********************************L%010dF", N_caracteres_totales);
+                    vTaskDelay(200/portTICK_PERIOD_MS);                                     //Una vez que finalizo, espero un tiempo
+                    sprintf(buffer, "N03FIN***********************************L%010dF", N_caracteres_totales);  //Envio fin de gcode con la cantidad de caracteres para comprobar que se envio correcto
                     ServerTCP_sendData(buffer, 53);
                     //ESP_LOGW(tag3, "%s", buffer);
                     //printf("FIN");
+                    //Espero recepcion de mensaje por servidor indicando que se recibio correctamente el archivo gcode
                     LCDGotoXY(0, 2);
                     LCD_print("Verificando...      ");
                     uint8_t timeout=0;
                     while(true){
-                        uint8_t len=ServerTCP_leermensaje(buffer);
-                        if(len>0){
-                            if(len==53){
-                                if(buffer[0]=='N' && buffer[1]=='5' && buffer[2]=='3' && buffer[3]=='C' && buffer[52]=='F'){
+                        uint8_t len=ServerTCP_leermensaje(buffer);                          //Leo mensaje
+                        if(len>0){                                                          //Si el tamañod el mesnaje es mayor a cero
+                            if(len==53){                                                    //Si el mensaje contiene 53 caracteres
+                                if(buffer[0]=='N' && buffer[1]=='5' && buffer[2]=='3' && buffer[3]=='C' && buffer[52]=='F'){  //Si el mensaje es de codigo g comprabado correctamente
                                     LCDGotoXY(0, 2);
                                     LCD_print("Cargado correctament");
                                     vTaskDelay(3000/portTICK_PERIOD_MS);
-                                    goto end;
+                                    goto end;                                               //Regreso al menu
                                 }
                             }
                         }
-                        timeout++;
+                        timeout++;                                                          //Timeout de verificacion
                         vTaskDelay(300/portTICK_PERIOD_MS);
                         if(timeout>4){
                             LCDGotoXY(0, 2);
                             LCD_print("Error al pasar gcode");
                             vTaskDelay(3000/portTICK_PERIOD_MS);
-                            goto end;
+                            goto end;                                                       //Regreso al menu
                         }
                     }
                 }
@@ -206,18 +219,30 @@ void Cargar_gcode(void){
     }
 }
 
+/*========================================================================
+Funcion: Apagar
+Descripcion: Apaga el dispositivo
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
 void Apagar(void){
-    gpio_set_level(Pin_apagado, 0);
+    gpio_set_level(Pin_apagado, 0);     //Apago enclavamiento de mosfet
 }
 
-void menu(void){
-    uint8_t i=1;
+/*========================================================================
+Funcion: Menu
+Descripcion: Funcion para moverse sobre el menu
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
+void menu(void){                    
+    uint8_t i=1;                                                        //Posicion del menu actual
     while(true){
         uint8_t caracter=uart_ReadChar();
-        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Tecla para salir del menu
-        if(caracter=='<' || gpio_get_level(Tecla_baja)==0){i--;}
-        if(caracter=='>' || gpio_get_level(Tecla_sube)==0){i++;}
-        if(i<1){i=5;}  if(i>5){i=1;}
+        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}     //Tecla para salir del menu
+        if(caracter=='<' || gpio_get_level(Tecla_baja)==0){i--;}       //Tecla para bajar en el menu
+        if(caracter=='>' || gpio_get_level(Tecla_sube)==0){i++;}       //Tecla para subir en el menu
+        if(i<1){i=5;}  if(i>5){i=1;}                                   //Limites Posicion
         LCDclr();
         LCDGotoXY(8, 0);
         LCD_print("Menu");
@@ -232,7 +257,7 @@ void menu(void){
         if(i==4){LCD_print("Apagar dispositivo");}
         if(i==5){LCD_print("Volver");}
         
-        if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){
+        if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){            //Si se presiona enter, segun el valor del menu se va a la funcion especifica
             if(i==1){Set_cero();}
             if(i==2){Cargar_gcode();}
             if(i==4){Apagar();}
@@ -242,6 +267,12 @@ void menu(void){
     }
 }
 
+/*========================================================================
+Funcion: Teclado_init
+Descripcion: Inicializa los pines del teclado como entradas
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
 void Teclado_init(void){
     //Configuro entradas
     gpio_pad_select_gpio(Tecla_encendido);
@@ -260,8 +291,6 @@ void Teclado_init(void){
 	gpio_set_direction(Tecla_baja, GPIO_MODE_INPUT);
     gpio_pad_select_gpio(Tecla_sube);
 	gpio_set_direction(Tecla_sube, GPIO_MODE_INPUT);
-    gpio_pad_select_gpio(Tecla_gohome);
-	gpio_set_direction(Tecla_gohome, GPIO_MODE_INPUT);
     gpio_pad_select_gpio(Tecla_pasos);
 	gpio_set_direction(Tecla_pasos, GPIO_MODE_INPUT);
     gpio_pad_select_gpio(Tecla_fn);
@@ -269,22 +298,40 @@ void Teclado_init(void){
 	//gpio_set_pull_mode(Entrada[j], GPIO_PULLDOWN_ONLY);
 }
 
+/*========================================================================
+Funcion: Obtener_teclado
+Descripcion: Obtiene las teclas presionadas y ejecuta la accion determianda
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
 void Obtener_teclado(void){
 
     uint8_t caracter=uart_ReadChar();
 
-    if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){
+    if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){                        //Si se preciona enter, se abre el menu
         menu();
     }
 
+    //Envio comando a mach3 segun corresponda la tecla presionada
+
     if(gpio_get_level(Tecla_start)==0){
-       sprintf(buffer, "N02Start***************************************StartF");
-       ServerTCP_sendData(buffer, 53);
+        if(gpio_get_level(Tecla_fn)==0){
+            sprintf(buffer, "N02M1*********************************************M1F");
+            ServerTCP_sendData(buffer, 53);
+        }else{
+            sprintf(buffer, "N02Start***************************************StartF");
+            ServerTCP_sendData(buffer, 53);
+        }
     }
 
     if(gpio_get_level(Tecla_stop)==0){
-       sprintf(buffer, "N02Stop*****************************************StopF");
-       ServerTCP_sendData(buffer, 53);
+        if(gpio_get_level(Tecla_fn)==0){
+            sprintf(buffer, "N02M2*********************************************M2F");
+            ServerTCP_sendData(buffer, 53);
+        }else{
+            sprintf(buffer, "N02Stop*****************************************StopF");
+            ServerTCP_sendData(buffer, 53);
+        }
     }
 
     if(gpio_get_level(Tecla_reset)==0){
@@ -299,7 +346,7 @@ void Obtener_teclado(void){
 
     if(gpio_get_level(Tecla_cero)==0){
        if(gpio_get_level(Tecla_fn)==0){
-            sprintf(buffer, "N02M1*********************************************M1F");
+            sprintf(buffer, "N02HOME*****************************************HOMEF");
             ServerTCP_sendData(buffer, 53);
        }else{
         if(eje=='X'){
@@ -323,9 +370,9 @@ void Obtener_teclado(void){
 
     if(gpio_get_level(Tecla_eje)==0){
        if(gpio_get_level(Tecla_fn)==0){
-            sprintf(buffer, "N02M2*********************************************M2F");
+            sprintf(buffer, "N02M3*********************************************M3F");
             ServerTCP_sendData(buffer, 53);
-       }else{
+       }else{               //Cambio el eje actual
         if(eje=='A'){
             eje='Y';
         }else{
@@ -344,29 +391,24 @@ void Obtener_teclado(void){
        }
     }
 
-    if(gpio_get_level(Tecla_gohome)==0){
-       if(gpio_get_level(Tecla_fn)==0){
-            sprintf(buffer, "N02M3*********************************************M3F");
-            ServerTCP_sendData(buffer, 53);
-       }else{
-            sprintf(buffer, "N02HOME*****************************************HOMEF");
-            ServerTCP_sendData(buffer, 53);
-       }
-    }
-
     if(gpio_get_level(Tecla_pasos)==0){
        if(gpio_get_level(Tecla_fn)==0){
             sprintf(buffer, "N02M4*********************************************M4F");
             ServerTCP_sendData(buffer, 53);
-       }else{
-            pasos=pasos*10;
+       }else{                                  //Cambio los pasos
+            pasos=pasos*10;     
             if(pasos>=10){pasos=0.0001;}
        }
     }
     
 }
 
-
+/*========================================================================
+Funcion: ControlMPG_init
+Descripcion: Inicializa y crea la tarea encargada de procesar las acciones del control. Inicializa  teclado, sd, uart, encoder, adc.
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
 void ControlMPG_init(void){
     esp_err_t ret = xTaskCreate(&ControlMPG, "ControlMPG", 7072, NULL, 2, &TaskHandle_1); //Creo tarea
     if (ret != pdPASS)  {
@@ -386,13 +428,21 @@ void ControlMPG_init(void){
     config_adc(1, PIN_VBAT, ADC_WIDTH_12Bit, ADC_ATTEN_6db); //Canal 1 para leer tension bateria
 }
 
+/*========================================================================
+Funcion: ControlMPG
+Descripcion: Tarea del control
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
 static void ControlMPG(void *pvParameters) {
-    if(ServerTCP_socket_init(1)==false){ESP_LOGE(tag3, "Error al iniciar socket. Reiniciando ESP"); esp_restart();}
+    if(ServerTCP_socket_init(1)==false){ESP_LOGE(tag3, "Error al iniciar socket. Reiniciando ESP"); esp_restart();}             //Inicializa socket
     
     while (1) {
+        //Lee voltaje bateria
         uint16_t lectura=Leer_adc(1, PIN_VBAT, 5, ADC_WIDTH_12Bit);
         double voltaje_local=((lectura*3.3)/4095.0)*11; //Obtengo el valor de tension en el adc
 
+        //Envia valor del encoder al mach3
         portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
         if(pasos_encoder>0){
             if (pasos_encoder>9999){pasos_encoder=9999;}
@@ -407,7 +457,7 @@ static void ControlMPG(void *pvParameters) {
             if(ServerTCP_sendData(buffer, 53)==true){ }
         }
                 
-
+        //Pide informacion de los EJE al mach3
         bool conectado=false;
         strcpy(buffer, "N0451*********************************************51F");
         if(ServerTCP_sendData(buffer, 53)==true){    //Si se pudo enviar
@@ -418,10 +468,9 @@ static void ControlMPG(void *pvParameters) {
             LCDGotoXY(10, 0);
             LCD_print("ControlMPG");
             uint8_t len=ServerTCP_leermensaje(buffer);
-            if(len>0){
-            
+            //Muestro los valores de los ejes en el display
+            if(len>0){            
                // ESP_LOGW(tag3, "Leng MPG %d bytes: %s", len, buffer);
-                
                 if(len==53){
                     //Si el dato es informacion de ejes, las muestro en el LCD
                     //N51E+00000.0000x+00000.0000y+00000.0000z+00000.0000aF
@@ -473,6 +522,17 @@ static void ControlMPG(void *pvParameters) {
                             LCDGotoXY(3+i, 3);
                             LCD_print_char(buffer[28+i]);
                         }
+
+                        char texto[6];
+                        sprintf(buffer, "%c", eje);  
+                        LCDGotoXY(3, 19);
+                        LCD_print(buffer);
+
+                        portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
+                        sprintf(buffer, "%.4f", pasos);
+                        portEXIT_CRITICAL(&mux3);
+                        LCDGotoXY(2, 14);
+                        LCD_print(buffer);
                         
                     }
                     //Si el dato es de informacion de proceso
@@ -503,7 +563,7 @@ static void ControlMPG(void *pvParameters) {
             LCDcursorOFF();
         }
         
-        Obtener_teclado();
+        Obtener_teclado();                        //Lee los pulsadores
         
         vTaskDelay(200/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
     }

@@ -34,10 +34,10 @@
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
 #include "esp_log.h"
-#include "soc/soc.h" //disable brownout detector
-#include "soc/rtc_cntl_reg.h" //disable brownout detector (deteccion de apagon)
-#include "soc/rtc_wdt.h" //disable brownout detector
-#include <esp32/rom/ets_sys.h>    //Para retardo bloqueando todo el planificador
+#include "soc/soc.h"                //disable brownout detector
+#include "soc/rtc_cntl_reg.h"       //disable brownout detector (deteccion de apagon)
+#include "soc/rtc_wdt.h"            //disable brownout detector
+#include <esp32/rom/ets_sys.h>      //Para retardo bloqueando todo el planificador
 #include "../include/Wifi_Conect.h" //Libreria para generar un AP para configurar SSID y Password del WIFI al conectarse
                                     //Luego de detecar el wifi y poder conectarse, funciona en wifi estacion
 #include "../include/LCD.h"
@@ -47,6 +47,7 @@
 
 void app_main() {
     //ets_delay_us(500000);  //Delay 500ms por si no funciona apagado
+    //Configuro pin de apagado como salida y lo mantengo en 1
     gpio_pad_select_gpio(Pin_apagado);
     gpio_set_direction(Pin_apagado, GPIO_MODE_OUTPUT);
     gpio_set_level(Pin_apagado, 1);
@@ -55,16 +56,17 @@ void app_main() {
     rtc_wdt_protect_off();
     rtc_wdt_disable();
 
+    //Imprimo en LCD
     LCD_init();
     LCDGotoXY(5, 1);
     LCD_print("ControlMPG");
     LCDGotoXY(5, 2);
     LCD_print("Bienvenido");
 
-    vTaskDelay(3000/portTICK_PERIOD_MS);
+    vTaskDelay(3000/portTICK_PERIOD_MS);       //Espero 3 segundos
 
     iniciarWifi();        //Inicio WIFI en modo dual
-    //iniciarWifi()  crea una tarea que maneja todo el periferico wifi.
+    //iniciarWifi()  crea una tarea que maneja todo el periferico wifi. se puede ver en wifi_conect.c
     //Cuando se puede conectar a la red AP o cuando crea su poropio wifi (sta)
     //llama a ControlMPG_init() (ver lineas 236 y 432 de Wifi_Conect.c)
     //ControlMPG_init() crea una tarea encargada de realizar todas las acciones del control

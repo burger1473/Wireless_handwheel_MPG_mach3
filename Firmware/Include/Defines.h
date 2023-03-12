@@ -35,7 +35,6 @@
 #define Tecla_eje GPIO_NUM_14
 #define Tecla_sube GPIO_NUM_14
 #define Tecla_baja GPIO_NUM_14
-#define Tecla_gohome GPIO_NUM_14
 #define Tecla_pasos GPIO_NUM_14
 #define Tecla_fn GPIO_NUM_14
 

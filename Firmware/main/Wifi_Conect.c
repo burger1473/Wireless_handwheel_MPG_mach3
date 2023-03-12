@@ -116,9 +116,9 @@ void iniciarWifi_Modo_estacion(void)
     }
     ESP_ERROR_CHECK(ret);               //Verifica si hay errores
 
-    ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");                 //Especifigo en el logger que estoy en modo Estacion
-    s_wifi_event_group = xEventGroupCreate();          //Crea un nuevo grupo de eventos RTOS y devuelve un identificador mediante el cual se puede hacer referencia al grupo de eventos recién creado (event_groups.c)
-    ESP_ERROR_CHECK(esp_netif_init());                 //Inicializa el stack TCP/IP 
+    ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");               //Especifigo en el logger que estoy en modo Estacion
+    s_wifi_event_group = xEventGroupCreate();         //Crea un nuevo grupo de eventos RTOS y devuelve un identificador mediante el cual se puede hacer referencia al grupo de eventos recién creado (event_groups.c)
+    ESP_ERROR_CHECK(esp_netif_init());                //Inicializa el stack TCP/IP 
     ESP_ERROR_CHECK(esp_event_loop_create_default()); //Crea un event loop
 
     //Crea WIFI STA por defecto. En caso de cualquier error de inicialización, esta API se cancela.
@@ -173,12 +173,12 @@ void iniciarWifi_Modo_estacion(void)
         free (p);                           //Libera la memoria utilizada en P
         char * j=read_array_eeprom("PASS"); //Obtiene el array almacenado en la llave "PASS" de la memoria la eeprom
         if(j[0]=='+'){
-            strcpy(&WIFI_PASS, "");              //Copia el valor leido de la EEPROM en WIFI_PASS
+            strcpy(&WIFI_PASS, "");         //Copia el valor leido de la EEPROM en WIFI_PASS
         }else{
-            strcpy(&WIFI_PASS, j);              //Copia el valor leido de la EEPROM en WIFI_PASS
+            strcpy(&WIFI_PASS, j);          //Copia el valor leido de la EEPROM en WIFI_PASS
         }
-        free (j);                                       //Libera la memoria utilizada en j
-        strcpy(&wifi_config.sta.ssid, &WIFI_SSID);     //Copia WIFI_SSID en la variable de la estructura wifi_config donde corresponde
+        free (j);                           //Libera la memoria utilizada en j
+        strcpy(&wifi_config.sta.ssid, &WIFI_SSID);    //Copia WIFI_SSID en la variable de la estructura wifi_config donde corresponde
         strcpy(&wifi_config.sta.password, &WIFI_PASS);//Copia WIFI_SSID en la variable de la estructura wifi_config donde corresponde
     #endif
 
@@ -190,20 +190,20 @@ void iniciarWifi_Modo_estacion(void)
                 .password = WIFI_PASS,      //Contraseña declarada en el define de Wifi_conect.h
                 .threshold.authmode = WIFI_AUTH_WPA2_PSK, //tipo de autenticación
                 .pmf_cfg = {
-                    .capable = true, //Anuncia la compatibilidad con Protected Management Frame (PMF). El dispositivo preferirá conectarse en modo PMF si otro dispositivo también anuncia la capacidad PMF.
-                    .required = false //Anuncia que se requiere Protected Management Frame (PMF). El dispositivo no se asociará a dispositivos que no sean compatibles con PMF.
+                    .capable = true,       //Anuncia la compatibilidad con Protected Management Frame (PMF). El dispositivo preferirá conectarse en modo PMF si otro dispositivo también anuncia la capacidad PMF.
+                    .required = false      //Anuncia que se requiere Protected Management Frame (PMF). El dispositivo no se asociará a dispositivos que no sean compatibles con PMF.
                 },
             },
         };
     #endif
 
-    ServerTCP_configwifi();
+    ServerTCP_configwifi();                //Inicio servidor TCP para comunicacion con software en c#. Esto se puede ver en wifi_serverTCP.c
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) ); //Configura el modo STA (tambien puede ser AP o STA+AP)
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );               //Configura el modo STA (tambien puede ser AP o STA+AP)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) ); //Configura el WiFI segun el modo seleccionado
-    ESP_ERROR_CHECK(esp_wifi_start() ); //Inicia el Wifi
+    ESP_ERROR_CHECK(esp_wifi_start() );                               //Inicia el Wifi
     
-    ServerTCP_configmDNS();
+    ServerTCP_configmDNS();                //Configuro DNS para poder acceder sin saber la IP. Se puede ver en wifi_servertcp.c
     
 
     /*
@@ -224,15 +224,15 @@ void iniciarWifi_Modo_estacion(void)
     if (bits & WIFI_CONNECTED_BIT) {  //Si se conecto
         ESP_LOGI(TAG, "Conectado al AP SSID:%s password:%s",
                  WIFI_SSID, WIFI_PASS);
-        ControlMPG_init();
+        ControlMPG_init();            //Crea e inicia la tarea que maneja las actividades del control. Se puede ver en ControlMPG.c
     } else if (bits & WIFI_FAIL_BIT) { //Si fallo la conexion
         ESP_LOGI(TAG, "Fallo al conectar al AP SSID:%s, password:%s",
                  WIFI_SSID, WIFI_PASS);
         //Si fallo la conexion y esta en modo DUAL, establesco error_estacion en 1 y reinicio el micro para que comience en modo AP para configurar el wifi
         #ifdef MODE_DUAL
             ESP_LOGI(TAG,"Reiniciando micro para que comience como modo AP para configurar WIFI");
-            error_estacion=1;
-            esp_restart(); //Reinicio ESP
+            error_estacion=1; //Variable que no se borra al reinicia, sirve para configar en modo STA al no funcionar la coneccion al AP
+            esp_restart();    //Reinicio ESP
         #endif
 
     } else { //Si no fue ninguno de los eventos declarados anteriormente
@@ -368,7 +368,7 @@ void wifi_init_softap(void)
                                                         NULL));
 
 
-    wifi_config_t wifi_config = {                     //Arreglo de configuracion
+    wifi_config_t wifi_config = {                         //Arreglo de configuracion
         .ap = {
             .ssid = EXAMPLE_ESP_WIFI_SSID_AP,             //Configuro SSID establecido en define dentro Wifi_Conect.h
             .ssid_len = strlen(EXAMPLE_ESP_WIFI_SSID_AP), //Tamaño del SSID
@@ -384,18 +384,18 @@ void wifi_init_softap(void)
     }
     
     nvs_flash_init();
-    tcpip_adapter_init();
+    tcpip_adapter_init();                                 //Inicio adaptador TCPIP
     //esp_event_loop_init(wifi_event_handler, NULL);
     wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
     //esp_wifi_init(&wifi_init_config);
     esp_wifi_set_storage(WIFI_STORAGE_RAM);
 
  
-    ServerTCP_configwifi();
+    ServerTCP_configwifi();                                         //Inicio servidor TCP para comunicacion con software en c#. Esto se puede ver en wifi_serverTCP.c
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));               //Selecciono el wifi en modo AP y verifico errores
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config)); //Configuro el AP y verifico errores
     ESP_ERROR_CHECK(esp_wifi_start());                              //Cominezo el Wifi en modo AP
-    ServerTCP_configmDNS();
+    ServerTCP_configmDNS();                                         //Configuro DNS para poder acceder sin saber la IP. Se puede ver en wifi_servertcp.c
     ESP_LOGI(TAG, "wifi_init_softap finished. SSID:%s password:%s channel:%d",
              EXAMPLE_ESP_WIFI_SSID_AP, EXAMPLE_ESP_WIFI_PASS_AP, EXAMPLE_ESP_WIFI_CHANNEL);
 }
@@ -422,9 +422,9 @@ static httpd_handle_t start_webserver(void)
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &principal); //Registro el evento cuando se llama al server con la url principal ("/") Esto se establecio en este archivo en el aparado de variables, arriba de todo (principal)
-        ServerTCP_configmDNS();
-        ServerTCP_mDNS_addService(80);
-        ControlMPG_init();
+        ServerTCP_configmDNS();                         //Configuro DNS para poder acceder sin saber la IP. Se puede ver en wifi_servertcp.c
+        ServerTCP_mDNS_addService(80);                  //Asigna el puerto 80 como http para poder ver la pagina de configuracion por medio del mDNS. Se puede ver en wifi_servertcp.c
+        ControlMPG_init();                              //Crea e inicia la tarea que maneja las actividades del control. Se puede ver en ControlMPG.c
         return server; //Retorno el puntero del evento del servidor
     }
  
