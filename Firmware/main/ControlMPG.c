@@ -30,35 +30,63 @@ static char tag3[] = "Control_debug";
 TaskHandle_t TaskHandle_1 = NULL;
 char buffer[54];                   //Sirve para enviar datos por TCP/IP
 portMUX_TYPE mux3 = portMUX_INITIALIZER_UNLOCKED; //Inicializa el spinlock desbloqueado
-uint8_t pasos_encoder=0; //Variable que contiene lo que se incremento el encoder
+int16_t pasos_encoder=0; //Variable que contiene lo que se incremento el encoder
 float pasos=0.0001;      //Para indicar x1 x0.1 x0.01 x0.001 x0.0001
 char eje='X';            //Eje actual
-char signo='+';          //Signo de movimeinto actual (se modifica con el encoder segun como gire)
+const int timeThreshold = 8000;
+long timeCounter = 0;
 
 /*===================================================[Implementaciones]===============================================*/
 
 /*========================================================================
 Funcion: IRAM_ATTR gpio_isr_handlers
-Descripcion: Funcion que se llama por la interrupcion del pin de cruce por cero, 
-             se usa para activar el timer, una vez que el timer desborda, se pausa.
+Descripcion: Funcion que se llama por la interrupcion DEL PIN A del encoder.
 Sin parametro de entrada
 No retorna nada
 ========================================================================*/
 static void IRAM_ATTR gpio_isr_handlers(void* arg)
 {
-   portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
-   pasos_encoder++;
-   portEXIT_CRITICAL(&mux3);
-   if ( gpio_get_level(PIN_encoder_B) == 0) {
-        // El pin B está en bajo, se está moviendo en dirección horaria
+    if (esp_timer_get_time() > timeCounter + timeThreshold)
+   {
+      if (gpio_get_level(PIN_encoder_A) == gpio_get_level(PIN_encoder_B))
+      {
         portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
-        signo='+';
+        pasos_encoder++;
         portEXIT_CRITICAL(&mux3);
-   } else {
-        // El pin B está en alto, se está moviendo en dirección antihoraria
+      }
+      else
+      {
+         portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
+         pasos_encoder--;
+         portEXIT_CRITICAL(&mux3);
+      }
+      timeCounter = esp_timer_get_time();
+   }
+}
+
+/*========================================================================
+Funcion: IRAM_ATTR gpio_isr_handlers2
+Descripcion: Funcion que se llama por la interrupcion DEL PIN AB del encoder.
+Sin parametro de entrada
+No retorna nada
+========================================================================*/
+static void IRAM_ATTR gpio_isr_handlers2(void* arg)
+{
+    if (esp_timer_get_time() > timeCounter + timeThreshold)
+   {
+      if (gpio_get_level(PIN_encoder_A) == gpio_get_level(PIN_encoder_B))
+      {
         portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
-        signo='-';
+        pasos_encoder++;
         portEXIT_CRITICAL(&mux3);
+      }
+      else
+      {
+         portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
+         pasos_encoder--;
+         portEXIT_CRITICAL(&mux3);
+      }
+      timeCounter = esp_timer_get_time();
    }
 }
 
@@ -77,7 +105,8 @@ void Set_cero(void){
         LCD_print("...");
         LCDGotoXY(0, 3);
         LCD_print("Pres x para salir");
-        uint8_t caracter=uart_ReadChar();
+        //uint8_t caracter=uart_ReadChar();
+        uint8_t caracter='p';
         if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}               //Tecla para salir del menu
         if(caracter=='z' || gpio_get_level(PIN_opto)==0){break;}                 //Si el opto detecta, salgo del while
         strcpy(buffer, "N01S0.0001X+0100************************************F"); //Mientras el while siga, envio al mach3 que baje el eje y
@@ -94,7 +123,8 @@ void Set_cero(void){
         LCD_print("Pres ENTER para si");
         LCDGotoXY(0, 3);
         LCD_print("Pres STOP para no");
-        uint8_t caracter=uart_ReadChar();
+        //uint8_t caracter=uart_ReadChar();
+        uint8_t caracter='p';
         if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Si presiona salir, sale del while
         if(caracter=='s' || gpio_get_level(Tecla_encendido)==0){             //Si se desea bajar
             strcpy(buffer, "N01S0.0001X+1000************************************F"); //Bajo el espesor por mach3
@@ -123,7 +153,8 @@ void Cargar_gcode(void){
         LCDGotoXY(0, 3);
         LCD_print("STOP para salir    <");
         
-        uint8_t caracter=uart_ReadChar();
+        //uint8_t caracter=uart_ReadChar();
+        uint8_t caracter='p';
         if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Aborto tarea y salgo
 
         char nombree[512];
@@ -226,6 +257,12 @@ Sin parametro de entrada
 No retorna nada
 ========================================================================*/
 void Apagar(void){
+    LCDclr();
+    LCDGotoXY(6, 1);
+    LCD_print("Apagando");
+    LCDGotoXY(5, 2);
+    LCD_print("ControlMPG");
+    vTaskDelay(3000/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
     gpio_set_level(Pin_apagado, 0);     //Apago enclavamiento de mosfet
 }
 
@@ -238,7 +275,8 @@ No retorna nada
 void menu(void){                    
     uint8_t i=1;                                                        //Posicion del menu actual
     while(true){
-        uint8_t caracter=uart_ReadChar();
+        //uint8_t caracter=uart_ReadChar();
+        uint8_t caracter='p';
         if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}     //Tecla para salir del menu
         if(caracter=='<' || gpio_get_level(Tecla_baja)==0){i--;}       //Tecla para bajar en el menu
         if(caracter=='>' || gpio_get_level(Tecla_sube)==0){i++;}       //Tecla para subir en el menu
@@ -263,7 +301,7 @@ void menu(void){
             if(i==4){Apagar();}
             if(i==5){break;}
         }
-        vTaskDelay(300/portTICK_PERIOD_MS) ;
+        vTaskDelay(100/portTICK_PERIOD_MS) ;
     }
 }
 
@@ -306,10 +344,24 @@ No retorna nada
 ========================================================================*/
 void Obtener_teclado(void){
 
-    uint8_t caracter=uart_ReadChar();
-
+    //uint8_t caracter=uart_ReadChar();
+    uint8_t caracter='p';
     if(caracter=='o' || gpio_get_level(Tecla_encendido)==0){                        //Si se preciona enter, se abre el menu
+        LCDclr();
+        LCDGotoXY(6, 1);
+        LCD_print("Cargando");
+        LCDGotoXY(8, 2);
+        LCD_print("Menu");
+        vTaskDelay(1500/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
+        LCDclr();
         menu();
+        LCDclr();
+        LCDGotoXY(6, 1);
+        LCD_print("Saliendo");
+        LCDGotoXY(8, 2);
+        LCD_print("Menu");
+        vTaskDelay(1500/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
+        LCDclr();
     }
 
     //Envio comando a mach3 segun corresponda la tecla presionada
@@ -373,7 +425,7 @@ void Obtener_teclado(void){
             sprintf(buffer, "N02M3*********************************************M3F");
             ServerTCP_sendData(buffer, 53);
        }else{               //Cambio el eje actual
-        if(eje=='A'){
+        if(eje=='X'){
             eje='Y';
         }else{
             if(eje=='Y'){
@@ -418,14 +470,17 @@ void ControlMPG_init(void){
 
     Teclado_init();
     SD_init();
-    uart_init();
-    config_gpio_como_int(PIN_encoder_A, GPIO_INTR_NEGEDGE, GPIO_PULLUP_DISABLE, GPIO_PULLDOWN_DISABLE, &gpio_isr_handlers); //Activa interrupcion del pin de deteccion de cruce por cero. Funcion  gpio_isr_handlers
+    //uart_init();
     gpio_pad_select_gpio(PIN_encoder_A);
-    gpio_pad_select_gpio(PIN_encoder_B);
     gpio_set_direction(PIN_encoder_A, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(PIN_encoder_A, GPIO_PULLUP_ONLY);
+    config_gpio_como_int(PIN_encoder_A, GPIO_INTR_ANYEDGE, GPIO_PULLUP_ENABLE, GPIO_PULLDOWN_DISABLE, &gpio_isr_handlers); //Activa interrupcion del pin de deteccion de cruce por cero. Funcion  gpio_isr_handlers
+    gpio_pad_select_gpio(PIN_encoder_B);
     gpio_set_direction(PIN_encoder_B, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(PIN_encoder_B, GPIO_PULLUP_ONLY);
+    config_gpio_como_int(PIN_encoder_B, GPIO_INTR_ANYEDGE, GPIO_PULLUP_ENABLE, GPIO_PULLDOWN_DISABLE, &gpio_isr_handlers2); //Activa interrupcion del pin de deteccion de cruce por cero. Funcion  gpio_isr_handlers
     //Configuro los canales ADC para realizar mediciones
-    config_adc(1, PIN_VBAT, ADC_WIDTH_12Bit, ADC_ATTEN_6db); //Canal 1 para leer tension bateria
+    config_adc(2, PIN_VBAT, ADC_WIDTH_12Bit, ADC_ATTEN_6db); //Canal 1 para leer tension bateria
 }
 
 /*========================================================================
@@ -439,23 +494,31 @@ static void ControlMPG(void *pvParameters) {
     
     while (1) {
         //Lee voltaje bateria
-        uint16_t lectura=Leer_adc(1, PIN_VBAT, 5, ADC_WIDTH_12Bit);
+        uint16_t lectura=Leer_adc(2, PIN_VBAT, 5, ADC_WIDTH_12Bit);
         double voltaje_local=((lectura*3.3)/4095.0)*11; //Obtengo el valor de tension en el adc
 
         //Envia valor del encoder al mach3
+        uint8_t pasos_encoder_local=0;
+        char signo_local='+'; 
         portENTER_CRITICAL(&mux3); //seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
-        if(pasos_encoder>0){
-            if (pasos_encoder>9999){pasos_encoder=9999;}
-            sprintf(buffer, "N01S%06.4f%c%c%04d************************************F", pasos, eje, signo, pasos_encoder);
-            //strcpy(buffer, "N01S0.0001X+1000************************************F");
+        if(pasos_encoder!=0){
+            if(pasos_encoder<0){
+                pasos_encoder_local=pasos_encoder*-1;
+                signo_local='-';
+            }else{
+                pasos_encoder_local=pasos_encoder;
+                signo_local='+';
+            }
+            pasos_encoder=0;
         }
-        uint8_t pasos_encoder_local=pasos_encoder;
-        pasos_encoder=0;
         portEXIT_CRITICAL(&mux3);
-
         if(pasos_encoder_local>0){
+            if (pasos_encoder_local>9999){pasos_encoder_local=9999;}
+            sprintf(buffer, "N01S%06.4f%c%c%04d************************************F", pasos, eje, signo_local, pasos_encoder_local);
+            //strcpy(buffer, "N01S0.0001X+1000************************************F");
             if(ServerTCP_sendData(buffer, 53)==true){ }
         }
+        
                 
         //Pide informacion de los EJE al mach3
         bool conectado=false;
@@ -568,6 +631,6 @@ static void ControlMPG(void *pvParameters) {
 
         Obtener_teclado();                        //Lee los pulsadores
         
-        vTaskDelay(200/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
+        vTaskDelay(50/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
     }
 }

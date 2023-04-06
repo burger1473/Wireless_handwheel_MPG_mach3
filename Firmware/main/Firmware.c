@@ -43,11 +43,12 @@
 #include "../include/LCD.h"
 #include "../include/ControlMPG.h"
 #include "../include/Defines.h"
-
+#include "esp_system.h"
 
 void app_main() {
     //ets_delay_us(500000);  //Delay 500ms por si no funciona apagado
     //Configuro pin de apagado como salida y lo mantengo en 1
+    //ESP_LOGI(TAG, "Ver: 1.0.0\n");
     gpio_pad_select_gpio(Pin_apagado);
     gpio_set_direction(Pin_apagado, GPIO_MODE_OUTPUT);
     gpio_set_level(Pin_apagado, 1);
@@ -55,7 +56,7 @@ void app_main() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
     rtc_wdt_protect_off();
     rtc_wdt_disable();
-
+    
     //Imprimo en LCD
     LCD_init();
     LCDGotoXY(5, 1);
@@ -63,7 +64,7 @@ void app_main() {
     LCDGotoXY(5, 2);
     LCD_print("Bienvenido");
 
-    vTaskDelay(3000/portTICK_PERIOD_MS);       //Espero 3 segundos
+    vTaskDelay(1500/portTICK_PERIOD_MS);       //Espero 3 segundos
 
     iniciarWifi();        //Inicio WIFI en modo dual
     //iniciarWifi()  crea una tarea que maneja todo el periferico wifi. se puede ver en wifi_conect.c
