@@ -17,7 +17,7 @@
 #include "../include/Uart.h"
 #include "../include/Interrupcion_gpio.h"
 #include "../include/ADC.h"
-
+#include "../include/Timer_Hardware.h"
 
 /*===================================================[Prototipos de funciones]===============================================*/
 static void ControlMPG(void *pvParameters);
@@ -30,20 +30,50 @@ static char tag3[] = "Control_debug";
 TaskHandle_t TaskHandle_1 = NULL;
 char buffer[54];                   //Sirve para enviar datos por TCP/IP
 portMUX_TYPE mux3 = portMUX_INITIALIZER_UNLOCKED; //Inicializa el spinlock desbloqueado
-int16_t pasos_encoder=0; //Variable que contiene lo que se incremento el encoder
+int pasos_encoder=0; //Variable que contiene lo que se incremento el encoder
 float pasos=0.0001;      //Para indicar x1 x0.1 x0.01 x0.001 x0.0001
 char eje='X';            //Eje actual
 const int timeThreshold = 8000;
 long timeCounter = 0;
+int state_clk_old;
+int state_dt_old;
 
 /*===================================================[Implementaciones]===============================================*/
+
+/*========================================================================
+Funcion: timer_tg0_isr
+Descripcion: Funcion que se llama cuando desborda el timer luego de x us, 
+             se usa para hacer un retardo luego del cruce por cero y poder controlar el angulo del scr
+Parametro de entrada: corriente deseada como setpoint
+No retorna nada
+========================================================================*/
+static void timer_tg0_isr(void* arg)
+{
+    portENTER_CRITICAL(&mux);                                                         //Seccion critica para evitar que se ejecute cambio de contexto mientras se esta realizando la interrpcion
+    Pausar_timer(TIMER_GROUP_0, TIMER_0);                                             //Pauso este timer
+    TIMERG0.int_clr_timers.t0 = 1;                                                    //Establesco el timer en 1 (reinicio conteo del timer)
+    //TIMERG0.hw_timer[0].config.alarm_en = 1; 
+    int state_clk = gpio_get_level(PIN_encoder_B);
+    int state_dt = gpio_get_level(PIN_encoder_A);
+    
+    if(state_clk_old == 1 && state_clk == 0){
+        if(state_dt == 0){
+        pasos_encoder--;
+        }else{
+        pasos_encoder++;
+        }
+    }
+    state_clk_old = state_clk;
+    timer_hardware_config (TIMER_GROUP_0, TIMER_0, 5000, &timer_tg0_isr); //Habilito timer para 5000 uS = 5 mS
+    portEXIT_CRITICAL(&mux);
+}
 
 /*========================================================================
 Funcion: IRAM_ATTR gpio_isr_handlers
 Descripcion: Funcion que se llama por la interrupcion DEL PIN A del encoder.
 Sin parametro de entrada
 No retorna nada
-========================================================================*/
+========================================================================
 static void IRAM_ATTR gpio_isr_handlers(void* arg)
 {
     if (esp_timer_get_time() > timeCounter + timeThreshold)
@@ -64,12 +94,12 @@ static void IRAM_ATTR gpio_isr_handlers(void* arg)
    }
 }
 
-/*========================================================================
+========================================================================
 Funcion: IRAM_ATTR gpio_isr_handlers2
 Descripcion: Funcion que se llama por la interrupcion DEL PIN AB del encoder.
 Sin parametro de entrada
 No retorna nada
-========================================================================*/
+========================================================================
 static void IRAM_ATTR gpio_isr_handlers2(void* arg)
 {
     if (esp_timer_get_time() > timeCounter + timeThreshold)
@@ -89,6 +119,7 @@ static void IRAM_ATTR gpio_isr_handlers2(void* arg)
       timeCounter = esp_timer_get_time();
    }
 }
+*/
 
 /*========================================================================
 Funcion: Set_cero
@@ -449,7 +480,7 @@ void Obtener_teclado(void){
             ServerTCP_sendData(buffer, 53);
        }else{                                  //Cambio los pasos
             pasos=pasos*10;     
-            if(pasos>=10){pasos=0.0001;}
+            if(pasos>1){pasos=0.0001;}
        }
     }
     
@@ -467,20 +498,22 @@ void ControlMPG_init(void){
         ESP_LOGE(tag3, "Error al crear tarea ControlMPG. Reiniciando ESP"); 
         esp_restart();
     }
-
+    
+    pasos=1;
     Teclado_init();
     SD_init();
     //uart_init();
     gpio_pad_select_gpio(PIN_encoder_A);
     gpio_set_direction(PIN_encoder_A, GPIO_MODE_INPUT);
     gpio_set_pull_mode(PIN_encoder_A, GPIO_PULLUP_ONLY);
-    config_gpio_como_int(PIN_encoder_A, GPIO_INTR_ANYEDGE, GPIO_PULLUP_ENABLE, GPIO_PULLDOWN_DISABLE, &gpio_isr_handlers); //Activa interrupcion del pin de deteccion de cruce por cero. Funcion  gpio_isr_handlers
+    //config_gpio_como_int(PIN_encoder_A, GPIO_INTR_ANYEDGE, GPIO_PULLUP_ENABLE, GPIO_PULLDOWN_DISABLE, &gpio_isr_handlers); //Activa interrupcion del pin de deteccion de cruce por cero. Funcion  gpio_isr_handlers
     gpio_pad_select_gpio(PIN_encoder_B);
     gpio_set_direction(PIN_encoder_B, GPIO_MODE_INPUT);
     gpio_set_pull_mode(PIN_encoder_B, GPIO_PULLUP_ONLY);
-    config_gpio_como_int(PIN_encoder_B, GPIO_INTR_ANYEDGE, GPIO_PULLUP_ENABLE, GPIO_PULLDOWN_DISABLE, &gpio_isr_handlers2); //Activa interrupcion del pin de deteccion de cruce por cero. Funcion  gpio_isr_handlers
+    //config_gpio_como_int(PIN_encoder_B, GPIO_INTR_ANYEDGE, GPIO_PULLUP_ENABLE, GPIO_PULLDOWN_DISABLE, &gpio_isr_handlers2); //Activa interrupcion del pin de deteccion de cruce por cero. Funcion  gpio_isr_handlers
     //Configuro los canales ADC para realizar mediciones
     config_adc(2, PIN_VBAT, ADC_WIDTH_12Bit, ADC_ATTEN_6db); //Canal 1 para leer tension bateria
+    timer_hardware_config (TIMER_GROUP_0, TIMER_0, 5000, &timer_tg0_isr); //Habilito timer para 5000 uS = 5 mS
 }
 
 /*========================================================================
@@ -631,6 +664,6 @@ static void ControlMPG(void *pvParameters) {
 
         Obtener_teclado();                        //Lee los pulsadores
         
-        vTaskDelay(50/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
+        vTaskDelay(100/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
     }
 }
