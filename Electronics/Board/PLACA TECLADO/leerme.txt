@@ -1,0 +1,10 @@
+0,4 pistas
+o,6 perforaciones
+fresa engraving
+
+
+PLACA TECLADO
+94,5mm X 70mm
+
+PLACA MADRE
+126mm X 70mm
