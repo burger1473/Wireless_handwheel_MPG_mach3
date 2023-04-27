@@ -297,9 +297,11 @@ namespace COMPLETE_FLAT_UI
         String M51 = "N***************************************************F";
         String M52 = "N***************************************************F";
         int lineas_agregadas = 0;
-        string path = Directory.GetCurrentDirectory() + "/tempgcode.gcode";
+        string path = Directory.GetCurrentDirectory() + "/tempgcode.txt";
         int watchdog_socker = 0;
-
+        bool pasando_gcode = false;
+        int linea_final_gcode;
+        int gcode_caracteres_total = 0;
 
         private void GetMachInstance()
         {
@@ -486,6 +488,8 @@ namespace COMPLETE_FLAT_UI
             }
         }
 
+        
+
         void OnReceiveData(IAsyncResult result)
         {
             try
@@ -499,28 +503,29 @@ namespace COMPLETE_FLAT_UI
                 // Procesar los datos recibidos
                 String message = System.Text.Encoding.ASCII.GetString(buffer, 0, bytes);
 
-                String recortado = message.Substring(0, 53);
-                char[] chars = recortado.ToCharArray();
-                label6.Text = recortado.Length.ToString();
-                textBox1.Text= recortado;
-                if (recortado.Length == 53)
+                label11.Text = message;
+                if (message.Length>=53)
                 {
+                    String recortado = message.Substring(0, 53);
+                    char[] chars = recortado.ToCharArray();
+                    label6.Text = recortado.Length.ToString();
+                    textBox1.Text = recortado;
                     if (chars[0] == 'N' && chars[52] == 'F')                            //Si el mensaje es correcto
                     {                                                                  //N01S0.0001X+1000************************************F
                         watchdog_socker = 0;
                         if (recortado == "N0451*********************************************51F") { enviar_tcp(M51.Replace(",", ".")); }
                         if (recortado == "N0452*********************************************52F") { enviar_tcp(M52); }
-                        if (recortado == "N02Zero*****************************************ZeroF") { mach3_send_OEMDRO(1007); } //Zero all
-                        if (recortado == "N02ZeroX***************************************ZeroXF") { mach3_send_OEMDRO(1008); } //Zero x
-                        if (recortado == "N02ZeroY***************************************ZeroYF") { mach3_send_OEMDRO(1009); } //Zero y
-                        if (recortado == "N02ZeroZ***************************************ZeroZF") { mach3_send_OEMDRO(1010); } //Zero z
-                        if (recortado == "N02ZeroA***************************************ZeroAF") { mach3_send_OEMDRO(1011); } //Zero a
-                        if (recortado == "N02Reset***************************************ResetF") { mach3_send_OEMDRO(1021); } //Reset
-                        if (recortado == "N02Stop*****************************************StopF") { mach3_send_OEMDRO(1003); } //Stop
-                        if (recortado == "N02Rewind*************************************RewindF") { mach3_send_OEMDRO(1002); } //Rewind
-                        if (recortado == "N02Start***************************************StartF") { mach3_send_OEMDRO(1000); } //Cycle start
-                        if (recortado == "N02Pause***************************************PauseF") { mach3_send_OEMDRO(1001); } //Pause (Feed Hold)
-                        if (recortado == "N02GOTOZ***************************************GOTOZF") { mach3_send_OEMDRO(1017); } //Goto zero
+                        if (recortado == "N02Zero*****************************************ZeroF") { label9.Text = "Zero";  mach3_send_OEMDRO(1007); } //Zero all
+                        if (recortado == "N02ZeroX***************************************ZeroXF") { label9.Text = "ZeroX"; mach3_send_OEMDRO(1008); } //Zero x
+                        if (recortado == "N02ZeroY***************************************ZeroYF") { label9.Text = "ZeroY"; mach3_send_OEMDRO(1009); } //Zero y
+                        if (recortado == "N02ZeroZ***************************************ZeroZF") { label9.Text = "ZeroZ"; mach3_send_OEMDRO(1010); } //Zero z
+                        if (recortado == "N02ZeroA***************************************ZeroAF") { label9.Text = "ZeroA"; mach3_send_OEMDRO(1011); } //Zero a
+                        if (recortado == "N02Reset***************************************ResetF") { label9.Text = "Reset"; mach3_send_OEMDRO(1021); } //Reset
+                        if (recortado == "N02Stop*****************************************StopF") { label9.Text = "Stop"; mach3_send_OEMDRO(1003); } //Stop
+                        if (recortado == "N02Rewind*************************************RewindF") { label9.Text = "Rewind"; mach3_send_OEMDRO(1002); } //Rewind
+                        if (recortado == "N02Start***************************************StartF") { label9.Text = "Start"; mach3_send_OEMDRO(1000); } //Cycle start
+                        if (recortado == "N02Pause***************************************PauseF") { label9.Text = "Pause"; mach3_send_OEMDRO(1001); } //Pause (Feed Hold)
+                        if (recortado == "N02GOTOZ***************************************GOTOZF") { label9.Text = "HOME"; mach3_Sencode("G90 G1 Z20");  mach3_Sencode("G90 G1 X0 Y0");  mach3_Sencode("G90 G1 Z0"); } //Goto zero
 
                         if (chars[1] == '0' && chars[2] == '1' && chars[3] == 'S')    //Mensaje de movimiento de eje
                         {
@@ -532,6 +537,8 @@ namespace COMPLETE_FLAT_UI
                             String gcode_tosend = "G91 " + chars[10].ToString() + chars[11].ToString() + pasos.ToString();
                             label2.Text = gcode_tosend;
                             mach3_Sencode(gcode_tosend);
+
+
 
                             /*
                             mach3_send_OEMDRO(275);  //Set Jog mode STEP (same as button 205)
@@ -557,61 +564,84 @@ namespace COMPLETE_FLAT_UI
                         {
                             string text_codigo = message.Substring(8, 39);
                             string text_codigo_sin_asterisco = text_codigo.Replace('*', ' ');
-                            int linea_Actual = Int16.Parse(chars[3].ToString() + chars[4].ToString() + chars[5].ToString() + chars[6].ToString());
+
                             try
                             {
-                                if (chars[3] == chars[48] && chars[4] == chars[49] && chars[5] == chars[50] && chars[6] == chars[51])                                  //Si es la ultima linea
+                                if (chars[3] == 'S' && chars[4] == 'T' && chars[5] == 'A' && chars[6] == 'R' && chars[7] == 'T')
                                 {
-                                    File.AppendAllText(path, text_codigo_sin_asterisco);
-                                    lineas_agregadas++;
-
-                                    if (linea_Actual == lineas_agregadas)  //en este cado linea_Actual es el valor final
+                                    label8.Text = "si";
+                                    label10.Text = "start gcode";
+                                    linea_final_gcode = Int16.Parse(chars[47].ToString() + chars[48].ToString() + chars[49].ToString() + chars[50].ToString() + chars[51].ToString());
+                                    pasando_gcode = true;
+                                    gcode_caracteres_total = 0;
+                                    lineas_agregadas = 0;
+                                    // Create a file to write to.
+                                    try
                                     {
-                                        lineas_agregadas = 0;
-                                        mach3_Loadgcodefile(path);
-                                        enviar_tcp("N53Confirm:Gcode-load*******************************F");
-                                        //label2.Text = "Fin gcode";
+                                        path = Directory.GetCurrentDirectory() + "/tempgcode.txt";
+                                        using (StreamWriter sw = File.CreateText(path))
+                                        {
+                                            sw.Write("");
+                                        }
                                     }
-                                    else
+                                    catch
                                     {
-                                        //label2.Text = "Numeros de lineas diferentes";
+                                        path = Directory.GetCurrentDirectory() + "/tempgcode2.txt";
+                                        using (StreamWriter sw = File.CreateText(path))
+                                        {
+                                            sw.Write("");
+                                        }
                                     }
                                 }
-                                else                                   //Sino
+
+                                if (chars[3] == 'F' && chars[4] == 'I' && chars[5] == 'N')
                                 {
-                                    if (chars[3] == '0' && chars[4] == '0' && chars[5] == '0' && chars[6] == '1')  //Si es el inicio del codigo, primero borro el archivo completo 
+                                    int lineCount = 0;
+                                    int charCount = 0;
+                                    label10.Text = "Fin gcode";
+                                    using (StreamReader reader = new StreamReader(path))
                                     {
-                                        lineas_agregadas = 0;
-                                        // Create a file to write to.
-                                        try
+                                        string line;
+                                        while ((line = reader.ReadLine()) != null)
                                         {
-                                            path = Directory.GetCurrentDirectory() + "/tempgcode.gcode";
-                                            using (StreamWriter sw = File.CreateText(path))
-                                            {
-                                                sw.WriteLine(text_codigo_sin_asterisco);
-                                            }
+                                            lineCount++;
+                                            charCount += line.Length;
                                         }
-                                        catch
-                                        {
-                                            path = Directory.GetCurrentDirectory() + "/tempgcode2.gcode";
-                                            using (StreamWriter sw = File.CreateText(path))
-                                            {
-                                                sw.WriteLine(text_codigo_sin_asterisco);
-                                            }
-                                        }
-
-                                        //File.AppendAllText(path, text_codigo_sin_asterisco);
-                                        lineas_agregadas++;
                                     }
-                                    else
+                                    charCount = charCount - lineCount;
+                                    label8.Text = "fin Line" + lineCount.ToString() +" caracteres: " + gcode_caracteres_total.ToString() ;
+                                    int caracteres_total = Int32.Parse(chars[42].ToString() + chars[43].ToString() + chars[44].ToString() + chars[45].ToString() + chars[46].ToString() + chars[47].ToString() + chars[48].ToString() + chars[49].ToString() + chars[50].ToString() + chars[51].ToString());
+                                    if (gcode_caracteres_total == caracteres_total)
                                     {
-                                        if (linea_Actual == (lineas_agregadas + 1))
+                                        if (linea_final_gcode == lineCount)
                                         {
-                                            File.AppendAllText(path, text_codigo_sin_asterisco + "\n");
-                                            lineas_agregadas++;
+                                            enviar_tcp("N53Confirm:Gcode-load*******************************F");
+                                            //Inicio codigo para eliminar caracteres raros al final e inicio de cada linea
+                                            string contenido = "";
+                                            // Lee el contenido del archivo
+                                            using (StreamReader archivo = new StreamReader(path))
+                                            {
+                                                // Lee el archivo línea por línea
+                                                string linea;
+                                                while ((linea = archivo.ReadLine()) != null)
+                                                {
+                                                    // Agrega el contenido de la línea a la variable
+                                                    contenido += linea.Replace("\n", "").Replace("\r", "").Trim() + "\r\n";
+                                                }
+                                            }
+                                            string textoModificado = contenido;
+                                            using (StreamWriter writer = new StreamWriter(path, false, Encoding.ASCII))
+                                            {
+                                                writer.Write(contenido);
+                                            }
+                                            //Fin codigo para eliminar caracteres raros al final e inicio de cada linea
+                                            mach3_Loadgcodefile(path);
                                         }
-
                                     }
+
+                                    lineas_agregadas = 0;
+                                    gcode_caracteres_total = 0;
+                                    pasando_gcode = false;
                                 }
                             }
                             catch (Exception)
@@ -624,14 +654,24 @@ namespace COMPLETE_FLAT_UI
                     }
                     else
                     {
-                        label6.Text = chars[52].ToString();
-                        //label2.Text = "error";
+                        if (pasando_gcode == true)
+                        {
+                            File.AppendAllText(path, message + "\n", Encoding.ASCII);
+                            lineas_agregadas= lineas_agregadas +1;
+                            gcode_caracteres_total = gcode_caracteres_total + message.Length;
+                        }
                     }
                 }
                 else
                 {
-                    //label2.Text = "error";
+                    if (pasando_gcode == true)
+                    {
+                        File.AppendAllText(path, message + "\n", Encoding.ASCII);
+                        lineas_agregadas = lineas_agregadas + 1;
+                        gcode_caracteres_total = gcode_caracteres_total + message.Length;
+                    }
                 }
+                
 
 
                 //_mInst.LoadFile("C:/Users/fabia/OneDrive/Desktop/gcode.gcode");
@@ -734,6 +774,21 @@ namespace COMPLETE_FLAT_UI
             }
 
            
+        }
+
+        private void button4_Click_1(object sender, EventArgs e)
+        {
+            label9.Text = textBox2.Text; mach3_send_OEMDRO(Int32.Parse(textBox2.Text));
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            
         }
 
         private void pictureBox7_Click(object sender, EventArgs e)

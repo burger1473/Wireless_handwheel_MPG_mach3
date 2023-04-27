@@ -1,5 +1,5 @@
 N00*************************************************F
-
+N03START**************************************f0000*F
 N  nuevo mensaje
 00 tipo de mensaje
    00	Configuracion parametro
@@ -20,10 +20,22 @@ Dato
 					 -> Rewind  					 ->  Rewind*************************************Rewind
 					 -> Start						 ->  Start***************************************Start
 					 -> Pause						 ->  Pause***************************************Pause
-	para mensaje 03  ->0000C***************************************f0000
-					   0000C   numero de linea a enviar
-					   f0000   numero de linea actual
+														 HOME*****************************************HOME
+														 M1*********************************************M1
+														 M2*********************************************M2
+														 M3*********************************************M3
+														 
+	para mensaje 03  ->0000C**************************************Af0000                                       //La A indica que el mensaje es mas largo y se debe mandar un paquete nuevo
+					   0000C   numero de linea a enviar														   //Si en lugar de la A se coloca una F se indica que se finalizo el mensaje largo
+					   f0000   numero de linea actual														   //Si esta bien el tamaño, se pone 'N'
 					   ***************************************  Texto Gcode
+					   
+					   N00*************************************************F
+					   N03START***************************************00000F
+					   N03FIN***********************************L0000000000F				   
+	
+	
+	
 	para mensaje 04	 ->xx********************************************xx 
 					 -> donde xx es el numero de mensaje que se pide
 					 
