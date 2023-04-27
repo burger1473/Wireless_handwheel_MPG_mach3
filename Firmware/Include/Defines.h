@@ -43,6 +43,7 @@
 #define PIN_encoder_A GPIO_NUM_25 //DT
 #define PIN_encoder_B GPIO_NUM_26 //CLK
 #define PIN_VBAT ADC2_CHANNEL_3  //pin gpio_15
+
 /*
 #define Pin_apagado GPIO_NUM_15
 

@@ -46,6 +46,7 @@
 #include "esp_system.h"
 
 void app_main() {
+    vTaskDelay(500/portTICK_PERIOD_MS);       //Espero 3 segundos
     //ets_delay_us(500000);  //Delay 500ms por si no funciona apagado
     //Configuro pin de apagado como salida y lo mantengo en 1
     //ESP_LOGI(TAG, "Ver: 1.0.0\n");
@@ -63,7 +64,9 @@ void app_main() {
     LCD_print("ControlMPG");
     LCDGotoXY(5, 2);
     LCD_print("Bienvenido");
-
+    LCDGotoXY(7, 3);
+    LCD_print("V1.0.2");
+    
     vTaskDelay(1500/portTICK_PERIOD_MS);       //Espero 3 segundos
 
     iniciarWifi();        //Inicio WIFI en modo dual

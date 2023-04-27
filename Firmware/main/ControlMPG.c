@@ -37,7 +37,7 @@ const int timeThreshold = 8000;
 long timeCounter = 0;
 int state_clk_old;
 int state_dt_old;
-
+uint8_t resultado=5;
 /*===================================================[Implementaciones]===============================================*/
 
 /*========================================================================
@@ -131,16 +131,16 @@ void Set_cero(void){
     while (true){
         LCDclr();
         LCDGotoXY(0, 0);
-        LCD_print("Set Y to cero");
+        LCD_print("Set Z to cero");
         LCDGotoXY(0, 1);
         LCD_print("...");
         LCDGotoXY(0, 3);
-        LCD_print("Pres x para salir");
+        LCD_print("Pres STOP para salir");
         //uint8_t caracter=uart_ReadChar();
         uint8_t caracter='p';
         if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}               //Tecla para salir del menu
         if(caracter=='z' || gpio_get_level(PIN_opto)==0){break;}                 //Si el opto detecta, salgo del while
-        strcpy(buffer, "N01S0.0001X+0100************************************F"); //Mientras el while siga, envio al mach3 que baje el eje y
+        strcpy(buffer, "N01S0.0001Z-0100************************************F"); //Mientras el while siga, envio al mach3 que baje el eje y
         ServerTCP_sendData(buffer, 53);     //Aumento un paso en match3
         vTaskDelay(200/portTICK_PERIOD_MS);
     }
@@ -151,15 +151,22 @@ void Set_cero(void){
         LCDGotoXY(0, 0);
         LCD_print("Bajar el espesor?");
         LCDGotoXY(0, 2);
-        LCD_print("Pres ENTER para si");
+        LCD_print("Pres START para si");
         LCDGotoXY(0, 3);
         LCD_print("Pres STOP para no");
         //uint8_t caracter=uart_ReadChar();
         uint8_t caracter='p';
-        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){break;}           //Si presiona salir, sale del while
-        if(caracter=='s' || gpio_get_level(Tecla_encendido)==0){             //Si se desea bajar
-            strcpy(buffer, "N01S0.0001X+1000************************************F"); //Bajo el espesor por mach3
+        if(caracter=='x' || gpio_get_level(Tecla_stop)==0){
+            sprintf(buffer, "N02ZeroZ***************************************ZeroZF");
+            ServerTCP_sendData(buffer, 53);
+            break;
+        }           //Si presiona salir, sale del while
+        if(caracter=='s' || gpio_get_level(Tecla_start)==0){             //Si se desea bajar
+            strcpy(buffer, "N01S0.0001Z-1000************************************F"); //Bajo el espesor por mach3
             ServerTCP_sendData(buffer, 53);     //Aumento un paso en match3
+            vTaskDelay(300/portTICK_PERIOD_MS);
+            sprintf(buffer, "N02ZeroZ***************************************ZeroZF");
+            ServerTCP_sendData(buffer, 53);
             break;                              //Salgo
         }           
         vTaskDelay(300/portTICK_PERIOD_MS);
@@ -175,6 +182,10 @@ Sin parametro de entrada
 No retorna nada
 ========================================================================*/
 void Cargar_gcode(void){
+    LCDclr();
+    LCDGotoXY(2, 1);
+    LCD_print("Cargando Menu");
+    vTaskDelay(1000/portTICK_PERIOD_MS);    
     while(true){
         LCDclr();
         LCDGotoXY(0, 0);
@@ -213,8 +224,9 @@ void Cargar_gcode(void){
                     sprintf(buffer, "N03START***************************************%05dF", cant_lines);  //Indico al soft de windows que voy a enviar un gcode  con la cantidad de lineas que posee
                     ServerTCP_sendData(buffer, 53); 
                     //ESP_LOGW(tag3, "%s", buffer);
-                    vTaskDelay(200/portTICK_PERIOD_MS);                    //Retardo
-                    for(uint8_t j=1; j<cant_lines+1; j++){                 //Recorro cada linea del archivo
+                    vTaskDelay(1000/portTICK_PERIOD_MS);                    //Retardo
+                    
+                    for(uint_t j=1; j<cant_lines+1; j++){                 //Recorro cada linea del archivo
                         uint8_t caracter=uart_ReadChar();
                         if(caracter=='x' || gpio_get_level(Tecla_stop)==0){goto end;}           //Si se aborta el proceso, retorno al menu
                         LCDGotoXY(0, 2);
@@ -237,10 +249,10 @@ void Cargar_gcode(void){
                         
                         ServerTCP_sendData(contenido_linea, strlen(contenido_linea));       //Envio el contenido de la linea
                         //ESP_LOGW(tag3, "%s", contenido_linea); 
-                        vTaskDelay(50/portTICK_PERIOD_MS);                                  //Retardo para no saturar el ESP y el servidor tcp
+                        vTaskDelay(70/portTICK_PERIOD_MS);                                  //Retardo para no saturar el ESP y el servidor tcp
                     }
 
-                    vTaskDelay(200/portTICK_PERIOD_MS);                                     //Una vez que finalizo, espero un tiempo
+                    vTaskDelay(1000/portTICK_PERIOD_MS);                                     //Una vez que finalizo, espero un tiempo
                     sprintf(buffer, "N03FIN***********************************L%010dF", N_caracteres_totales);  //Envio fin de gcode con la cantidad de caracteres para comprobar que se envio correcto
                     ServerTCP_sendData(buffer, 53);
                     //ESP_LOGW(tag3, "%s", buffer);
@@ -501,7 +513,8 @@ void ControlMPG_init(void){
     
     pasos=1;
     Teclado_init();
-    SD_init();
+    resultado = SD_init();
+   
     //uart_init();
     gpio_pad_select_gpio(PIN_encoder_A);
     gpio_set_direction(PIN_encoder_A, GPIO_MODE_INPUT);
@@ -526,6 +539,32 @@ static void ControlMPG(void *pvParameters) {
     if(ServerTCP_socket_init(1)==false){ESP_LOGE(tag3, "Error al iniciar socket. Reiniciando ESP"); esp_restart();}             //Inicializa socket
     
     while (1) {
+        /*
+        if(resultado==0){
+            LCDclr();
+            LCDGotoXY(0, 0);
+            LCD_print("SD OK");
+            vTaskDelay(3000/portTICK_PERIOD_MS) ;
+        }
+        if(resultado==1){
+            LCDclr();
+            LCDGotoXY(0, 0);
+            LCD_print("Fail initialize bus");
+            vTaskDelay(3000/portTICK_PERIOD_MS) ;
+        }
+        if(resultado==2){
+            LCDclr();
+            LCDGotoXY(0, 0);
+            LCD_print("Fail mount filesystem");
+            vTaskDelay(3000/portTICK_PERIOD_MS) ;
+        }
+        if(resultado==3){
+            LCDclr();
+            LCDGotoXY(0, 0);
+            LCD_print("Fail initialize card");
+            vTaskDelay(3000/portTICK_PERIOD_MS) ;
+        }
+        */
         //Lee voltaje bateria
         uint16_t lectura=Leer_adc(2, PIN_VBAT, 5, ADC_WIDTH_12Bit);
         double voltaje_local=((lectura*3.3)/4095.0)*11; //Obtengo el valor de tension en el adc
@@ -633,17 +672,17 @@ static void ControlMPG(void *pvParameters) {
         }
        
         if(conectado==false){
-            LCDclr();
+            //LCDclr();
             LCDGotoXY(0, 0);
-            LCD_print("NC- ---");
+            LCD_print("NC- ---             ");
             //LCDGotoXY(10, 0);
             //LCD_print("ControlMPG");
             LCDGotoXY(0, 1);
-            LCD_print("X:     +-.----");
+            LCD_print("X:     +-.----      ");
             LCDGotoXY(0, 2);
-            LCD_print("Y:     +-.----");
+            LCD_print("Y:     +-.----      ");
             LCDGotoXY(0, 3);
-            LCD_print("Z:     +-.----");
+            LCD_print("Z:     +-.----      ");
             LCDcursorOFF();
         }
         

@@ -232,9 +232,12 @@ bool Sd_unmout_list(void){
 Funcion: SD_init
 Descripcion: Inicializo y configuro SD
 Sin parametro de entrada
-No retorna nada
+Retorna 0 si se pudo hacer
+        1 Failed to initialize bus 
+        2 Failed to mount filesystem
+        3 Failed to initialize the card
 ========================================================================*/
-void SD_init(void){
+uint8_t SD_init(void){
     ESP_LOGI(TAGGG, "Init SD");
     esp_err_t ret;
 
@@ -264,7 +267,7 @@ void SD_init(void){
     // For setting a specific frequency, use host.max_freq_khz (range 400kHz - 20MHz for SDSPI)
     // Example: for fixed frequency of 10MHz, use host.max_freq_khz = 10000;
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-
+    host.max_freq_khz = 10000;
     spi_bus_config_t bus_cfg = {
         .mosi_io_num = PIN_NUM_MOSI,
         .miso_io_num = PIN_NUM_MISO,
@@ -276,7 +279,7 @@ void SD_init(void){
     ret = spi_bus_initialize(host.slot, &bus_cfg, 1);
     if (ret != ESP_OK) {
         ESP_LOGE(TAGGG, "Failed to initialize bus.");
-        return;
+        return 1;
     }
 
     // This initializes the slot without card detect (CD) and write protect (WP) signals.
@@ -292,16 +295,17 @@ void SD_init(void){
         if (ret == ESP_FAIL) {
             ESP_LOGE(TAGGG, "Failed to mount filesystem. "
                      "If you want the card to be formatted, set the CONFIG_EXAMPLE_FORMAT_IF_MOUNT_FAILED menuconfig option.");
+             return 2;
         } else {
             ESP_LOGE(TAGGG, "Failed to initialize the card (%s). "
                      "Make sure SD card lines have pull-up resistors in place.", esp_err_to_name(ret));
+            return 3;
         }
-        return;
     }
     
     ESP_LOGI(TAGGG, "Filesystem mounted");
     montado=true;
-
+    return 0;
     // Card has been initialized, print its properties
     //sdmmc_card_print_info(stdout, card);
     
