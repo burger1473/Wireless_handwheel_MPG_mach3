@@ -158,7 +158,7 @@ namespace COMPLETE_FLAT_UI
             }
 
             //-------SIN EFECTO 
-            //if (panelMenu.Width == 55)
+            //if (panelMenu.Width == 55)Fu
             //{
             //    panelMenu.Width = 230;
             //}
@@ -525,7 +525,7 @@ namespace COMPLETE_FLAT_UI
                         if (recortado == "N02Rewind*************************************RewindF") { label9.Text = "Rewind"; mach3_send_OEMDRO(1002); } //Rewind
                         if (recortado == "N02Start***************************************StartF") { label9.Text = "Start"; mach3_send_OEMDRO(1000); } //Cycle start
                         if (recortado == "N02Pause***************************************PauseF") { label9.Text = "Pause"; mach3_send_OEMDRO(1001); } //Pause (Feed Hold)
-                        if (recortado == "N02GOTOZ***************************************GOTOZF") { label9.Text = "HOME"; mach3_Sencode("G90 G1 Z20");  mach3_Sencode("G90 G1 X0 Y0");  mach3_Sencode("G90 G1 Z0"); } //Goto zero
+                        if (recortado == "N02HOME*****************************************HOMEF") { label9.Text = "HOME"; mach3_Sencode("G90 G1 Z20");  mach3_Sencode("G90 G1 X0 Y0 A0");  mach3_Sencode("G90 G1 Z0"); } //Goto zero
 
                         if (chars[1] == '0' && chars[2] == '1' && chars[3] == 'S')    //Mensaje de movimiento de eje
                         {
