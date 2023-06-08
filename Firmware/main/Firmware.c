@@ -46,7 +46,15 @@
 #include "esp_system.h"
 
 void app_main() {
-    vTaskDelay(500/portTICK_PERIOD_MS);       //Espero 3 segundos
+
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
+    rtc_wdt_protect_off();
+    rtc_wdt_disable();
+    
+    gpio_pad_select_gpio(Pin_apagado);
+    gpio_set_direction(Pin_apagado, GPIO_MODE_OUTPUT);
+    gpio_set_level(Pin_apagado, 0);
+    vTaskDelay(500/portTICK_PERIOD_MS);       //Espero 0.5 segundos
     //ets_delay_us(500000);  //Delay 500ms por si no funciona apagado
     //Configuro pin de apagado como salida y lo mantengo en 1
     //ESP_LOGI(TAG, "Ver: 1.0.0\n");
@@ -54,10 +62,6 @@ void app_main() {
     gpio_set_direction(Pin_apagado, GPIO_MODE_OUTPUT);
     gpio_set_level(Pin_apagado, 1);
 
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
-    rtc_wdt_protect_off();
-    rtc_wdt_disable();
-    
     //Imprimo en LCD
     LCD_init();
     LCDGotoXY(5, 1);

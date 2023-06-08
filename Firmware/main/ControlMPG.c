@@ -226,7 +226,7 @@ void Cargar_gcode(void){
                     //ESP_LOGW(tag3, "%s", buffer);
                     vTaskDelay(1000/portTICK_PERIOD_MS);                    //Retardo
                     
-                    for(uint_t j=1; j<cant_lines+1; j++){                 //Recorro cada linea del archivo
+                    for(uint16_t j=1; j<cant_lines+1; j++){                 //Recorro cada linea del archivo
                         uint8_t caracter=uart_ReadChar();
                         if(caracter=='x' || gpio_get_level(Tecla_stop)==0){goto end;}           //Si se aborta el proceso, retorno al menu
                         LCDGotoXY(0, 2);
@@ -306,7 +306,7 @@ void Apagar(void){
     LCDGotoXY(5, 2);
     LCD_print("ControlMPG");
     vTaskDelay(3000/portTICK_PERIOD_MS) ;      // Delay para retardo del contador 
-    gpio_set_level(Pin_apagado, 0);     //Apago enclavamiento de mosfet
+    gpio_set_level(Pin_apagado, 0);            //Apago enclavamiento de mosfet
 }
 
 /*========================================================================
