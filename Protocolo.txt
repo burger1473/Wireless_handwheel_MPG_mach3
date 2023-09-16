@@ -1,0 +1,70 @@
+N00*************************************************F
+N03START**************************************f0000*F
+N  nuevo mensaje
+00 tipo de mensaje
+   00	Configuracion parametro
+   01   Movimiento por paso eje
+   02   Efectuar x accion
+   03	Carga de codigo G
+   04   Peticion de mensaje a cliente
+  
+Dato  
+	para mensaje 01  -> S0.0001X+1000					
+	para mensaje 02  -> ir a zero en todos los ejes  ->  Zero*****************************************Zero
+					 -> ir a zero en eje x			 ->  ZeroX***************************************ZeroX
+					 -> ir a zero en eje y			 ->  ZeroY***************************************ZeroY
+					 -> ir a zero en eje z			 ->  ZeroZ***************************************ZeroZ
+					 -> ir a zero en eje a			 ->  ZeroA***************************************ZeroA
+					 -> Reset						 ->  Reset***************************************Reset
+					 -> Stop						 ->  Stop*****************************************Stop
+					 -> Rewind  					 ->  Rewind*************************************Rewind
+					 -> Start						 ->  Start***************************************Start
+					 -> Pause						 ->  Pause***************************************Pause
+														 HOME*****************************************HOME
+														 M1*********************************************M1
+														 M2*********************************************M2
+														 M3*********************************************M3
+														 
+	para mensaje 03  ->0000C**************************************Af0000                                       //La A indica que el mensaje es mas largo y se debe mandar un paquete nuevo
+					   0000C   numero de linea a enviar														   //Si en lugar de la A se coloca una F se indica que se finalizo el mensaje largo
+					   f0000   numero de linea actual														   //Si esta bien el tamaño, se pone 'N'
+					   ***************************************  Texto Gcode
+					   
+					   N00*************************************************F
+					   N03START***************************************00000F
+					   N03FIN***********************************L0000000000F				   
+	
+	
+	
+	para mensaje 04	 ->xx********************************************xx 
+					 -> donde xx es el numero de mensaje que se pide
+					 
+	
+Desde aplicacion a esp:	
+
+N  nuevo mensaje
+00 tipo de mensaje
+   50	Configuracion parametro
+   51	Informacion ejes   				N51E+00000.0000x+00000.0000y+00000.0000z+00000.0000aF
+  
+   52   Informacion del proceso			N52EL00:00ES00:00NL0000LA0000***********************F
+   
+										EL00:00 = Elapsed time
+										ES00:00 = Estimative time
+										NL0000  = Numero de linea totales
+										LA0000	= Numero de linea actual
+   53   Confirmacion					N53Confirm:Gcode-load*******************************F
+   54	Aviso de conexion 				N54Conected*****************************************F
+   55	Mensaje de vivo					N55Vivo0000000**************************************F
+   
+   
+   
+Ejemplo carga gcode:
+
+
+
+N030001CG015***********************************f0005F
+N030002CG645***********************************f0005F
+N030003CG395***********************************f0005F
+N030004CH214***********************************f0005F
+N030005CB687***********************************f0005F

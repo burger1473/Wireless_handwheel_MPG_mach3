@@ -1,0 +1,76 @@
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe.config
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.pdb
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormListaClientes.resources
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormLogo.resources
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMantCliente.resources
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMembresia.resources
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMenuPrincipal.resources
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.Properties.Resources.resources
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.csproj.GenerateResource.Cache
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.exe
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.pdb
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe.manifest
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.application
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.exe.manifest
+D:\Programacion\TUT\Tutoriales #2\Proyectos\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.application
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe.config
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.exe
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.pdb
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe.manifest
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.application
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.pdb
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.csprojResolveAssemblyReference.cache
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormListaClientes.resources
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormLogo.resources
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMantCliente.resources
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMembresia.resources
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMenuPrincipal.resources
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.Properties.Resources.resources
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.csproj.GenerateResource.Cache
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.exe.manifest
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.application
+D:\Programacion\TUT\Tutoriales #2\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.Form1.resources
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe.config
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.exe
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.pdb
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe.manifest
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.application
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.pdb
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.csprojResolveAssemblyReference.cache
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.Form1.resources
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormListaClientes.resources
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormLogo.resources
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMantCliente.resources
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMembresia.resources
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMenuPrincipal.resources
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.Properties.Resources.resources
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.csproj.GenerateResource.Cache
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.exe.manifest
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.application
+D:\RJ Code Advance\Proyectos y DBs 2019\COMPLETE_FLAT_UI\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.test.FormMenuPrincipal.resources
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe.config
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe.manifest
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.application
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.exe
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\bin\Debug\COMPLETE_FLAT_UI.pdb
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.csproj.AssemblyReference.cache
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.Form1.resources
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormLogo.resources
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormMenuPrincipal.resources
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.Properties.Resources.resources
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.test.FormMenuPrincipal.resources
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.csproj.GenerateResource.cache
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.csproj.CoreCompileInputs.cache
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.exe.manifest
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.application
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.exe
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.pdb
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\Interop.Mach4.dll
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.csproj.ResolveComReference.cache
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormDispositivo.resources
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormUsuario.resources
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormListaTareas.resources
+C:\Users\fabia\OneDrive\Desktop\Tesis\Software\Wireless_handwheel_MPG_mach3\Software\VBC#\ControlMPG_gui\COMPLETE_FLAT_UI\obj\Debug\COMPLETE_FLAT_UI.FormNewTarea.resources
