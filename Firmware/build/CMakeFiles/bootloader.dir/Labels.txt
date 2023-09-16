@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/CMakeFiles/bootloader
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/CMakeFiles/bootloader.rule
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/CMakeFiles/bootloader-complete.rule
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+C:/Users/fabia/OneDrive/Desktop/Tesis/Firmware/Wireless_handwheel_MPG_mach3/Firmware/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
